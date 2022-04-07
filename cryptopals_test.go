@@ -22,7 +22,7 @@ func TestChallenge1(t *testing.T) {
 
 	got := base64.StdEncoding.EncodeToString(b)
 	if want != got {
-		t.Errorf("want: %s, got: %s", want, got)
+		t.Errorf("want: '%s', got: '%s'", want, got)
 	}
 }
 
@@ -44,7 +44,7 @@ func TestChallenge2(t *testing.T) {
 
 	got := hex.EncodeToString(xoredBytes)
 	if want != got {
-		t.Errorf("want: %s, got: %s", want, got)
+		t.Errorf("want: '%s', got: '%s'", want, got)
 	}
 }
 
@@ -63,7 +63,7 @@ func TestChallenge3(t *testing.T) {
 	result := analyzer.LeadingResult()
 	got := string(result.PlainText)
 	if want != got {
-		t.Errorf("want: %s, got: %s", want, got)
+		t.Errorf("want: '%s', got: '%s'", want, got)
 	}
 }
 
@@ -95,5 +95,18 @@ func TestChallenge4(t *testing.T) {
 	got := string(result.PlainText)
 	if want != got {
 		t.Errorf("want: '%s', got: '%s'", want, got)
+	}
+}
+
+func TestChallenge5(t *testing.T) {
+	input := []byte("Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal")
+	key := []byte("ICE")
+	want := "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
+
+	encrypted := crypto.RepeatingXOR(input, key)
+
+	got := hex.EncodeToString(encrypted)
+	if want != got {
+		t.Errorf("\nwant: '%s'\ngot : '%s'", want, got)
 	}
 }

@@ -20,3 +20,17 @@ func SingleByteXOR(s []byte, k byte) []byte {
 	}
 	return result
 }
+
+func RepeatingXOR(a, b []byte) []byte {
+	l := len(a)
+	if len(b) > l {
+		l = len(b)
+	}
+
+	result := make([]byte, l)
+	for i := 0; i < l; i++ {
+		result[i] = a[i%len(a)] ^ b[i%len(b)]
+	}
+
+	return result
+}
