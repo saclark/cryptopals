@@ -1,12 +1,14 @@
 package cryptopals
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/hex"
+	"os"
 	"testing"
 
 	"github.com/saclark/cryptopals-go/crypto"
-	"github.com/saclark/cryptopals-go/crypto/crack"
+	"github.com/saclark/cryptopals-go/crypto/analyze"
 )
 
 func TestChallenge1(t *testing.T) {
@@ -55,11 +57,43 @@ func TestChallenge3(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := crack.CrackSingleByteXORCipher(b)
+	analyzer := analyze.SingleByteXORAnalyzer{}
+	analyzer.AnalyzeBytes(b)
+
+	result := analyzer.LeadingResult()
+	got := string(result.PlainText)
+	if want != got {
+		t.Errorf("want: %s, got: %s", want, got)
+	}
+}
+
+func TestChallenge4(t *testing.T) {
+	inputFile := "challenge-data/4.txt"
+	want := "Now that the party is jumping\n"
+
+	file, err := os.Open(inputFile)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer file.Close()
+
+	analyzer := analyze.SingleByteXORAnalyzer{}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		b, err := hex.DecodeString(scanner.Text())
+		if err != nil {
+			t.Fatal(err)
+		}
+		analyzer.AnalyzeBytes(b)
+	}
+
+	if err := scanner.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	result := analyzer.LeadingResult()
+	got := string(result.PlainText)
 	if want != got {
-		t.Errorf("want: %s, got: %s", want, got)
+		t.Errorf("want: '%s', got: '%s'", want, got)
 	}
 }

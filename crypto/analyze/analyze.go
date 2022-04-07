@@ -1,4 +1,4 @@
-package crack
+package analyze
 
 import (
 	"math"
@@ -37,18 +37,35 @@ var charFrequencies = map[rune]float64{
 	'Z': 0.07,
 }
 
-func CrackSingleByteXORCipher(cipherText []byte) (string, error) {
-	var highScore float64
-	var bestCandidate string
+type SingleByteXORAnalyzer struct {
+	result *SingleByteXORAnalyzerResult
+}
+
+type SingleByteXORAnalyzerResult struct {
+	CipherText []byte
+	PlainText  []byte
+	Key        byte
+	Score      float64
+}
+
+func (a *SingleByteXORAnalyzer) AnalyzeBytes(cipherText []byte) {
 	for k := 0; k <= math.MaxUint8; k++ {
-		xored := string(crypto.SingleByteXOR(cipherText, uint8(k)))
-		score := englishLikenessScore(xored)
-		if score > highScore {
-			highScore = score
-			bestCandidate = xored
+		xoredBytes := crypto.SingleByteXOR(cipherText, uint8(k))
+		text := string(xoredBytes)
+		score := englishLikenessScore(text)
+		if a.result == nil || score > a.result.Score {
+			a.result = &SingleByteXORAnalyzerResult{
+				CipherText: cipherText,
+				PlainText:  xoredBytes,
+				Key:        byte(k),
+				Score:      score,
+			}
 		}
 	}
-	return bestCandidate, nil
+}
+
+func (a *SingleByteXORAnalyzer) LeadingResult() *SingleByteXORAnalyzerResult {
+	return a.result
 }
 
 func englishLikenessScore(text string) float64 {
