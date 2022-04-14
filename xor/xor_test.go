@@ -71,10 +71,10 @@ func TestHammingDistance(t *testing.T) {
 	}
 }
 
-func TestTransposeChunks(t *testing.T) {
+func TestTransposeBlocks(t *testing.T) {
 	testCases := []struct {
 		s         []byte
-		chunkSize int
+		blockSize int
 		want      [][]byte
 	}{
 		{[]byte{}, 2, [][]byte{}},
@@ -86,8 +86,8 @@ func TestTransposeChunks(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%v, %d", tc.s, tc.chunkSize), func(t *testing.T) {
-			got := transposeChunks(tc.s, tc.chunkSize)
+		t.Run(fmt.Sprintf("%v, %d", tc.s, tc.blockSize), func(t *testing.T) {
+			got := transposeBlocks(tc.s, tc.blockSize)
 			if len(tc.want) != len(got) {
 				t.Fatalf("want: '%v', got: '%v'", tc.want, got)
 			}

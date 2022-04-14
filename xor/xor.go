@@ -21,10 +21,10 @@ func FixedXOR(a, b []byte) []byte {
 }
 
 // RepeatingByteXOR XORs a byte array with a single repeating byte.
-func RepeatingByteXOR(s []byte, k byte) []byte {
-	result := make([]byte, len(s))
-	for i, b := range s {
-		result[i] = b ^ k
+func RepeatingByteXOR(a []byte, b byte) []byte {
+	result := make([]byte, len(a))
+	for i, x := range a {
+		result[i] = x ^ b
 	}
 	return result
 }
@@ -87,19 +87,19 @@ func englishScore(s []byte) float64 {
 // most promising (highest scoring) key that could have been used as a
 // reapeating key in an XOR cipher with the given cipher text. It will attempt
 // to detect a key no shorter than minKeySize and no longer than maxKeySize. The
-// comparisons argument specifies the number of consecutive blocks of bytes, up
-// to maxKeySize long, from cipherText that are to be compared when detecting
-// the key size. It panics if minKeySize, maxKeySize, or comparisons is <= 0,
-// if maxKeySize is less than minKeySize, or if comparisons is >=
-// len(cipherText)/maxKeySize.
-func DetectRepeatingXORKey(cipherText []byte, minKeySize, maxKeySize, comparisons int) ([]byte, float64) {
-	keySize, _ := detectKeySize(cipherText, minKeySize, maxKeySize, comparisons)
-	keyGroup := transposeChunks(cipherText, keySize)
+// blockComparisons argument specifies the number of consecutive blocks of
+// bytes, up to maxKeySize long, from cipherText that are to be compared when
+// detecting the key size. It panics if minKeySize, maxKeySize, or
+// blockComparisons is <= 0, if maxKeySize is less than minKeySize, or if
+// blockComparisons is >= len(cipherText)/maxKeySize.
+func DetectRepeatingXORKey(cipherText []byte, minKeySize, maxKeySize, blockComparisons int) ([]byte, float64) {
+	keySize, _ := detectKeySize(cipherText, minKeySize, maxKeySize, blockComparisons)
+	keyGroup := transposeBlocks(cipherText, keySize)
 
 	decodedKey := make([]byte, len(keyGroup))
 	for i, group := range keyGroup {
-		keyByte, _ := DetectRepeatingByteXORKey(group)
-		decodedKey[i] = keyByte
+		b, _ := DetectRepeatingByteXORKey(group)
+		decodedKey[i] = b
 	}
 
 	plainText := RepeatingXOR(cipherText, decodedKey)
@@ -107,7 +107,7 @@ func DetectRepeatingXORKey(cipherText []byte, minKeySize, maxKeySize, comparison
 	return decodedKey, englishScore(plainText)
 }
 
-func detectKeySize(cipherText []byte, minKeySize, maxKeySize, comparisons int) (int, float64) {
+func detectKeySize(cipherText []byte, minKeySize, maxKeySize, blockComparisons int) (int, float64) {
 	if minKeySize <= 0 || maxKeySize <= 0 {
 		panic("minKeySize and maxKeySize must be greater than 0")
 	}
@@ -118,7 +118,7 @@ func detectKeySize(cipherText []byte, minKeySize, maxKeySize, comparisons int) (
 	var keySize int
 	minScore := math.MaxFloat64
 	for k := maxKeySize; k >= minKeySize; k-- {
-		score := scoreKeySize(cipherText, k, comparisons)
+		score := scoreKeySize(cipherText, k, blockComparisons)
 		if score < minScore {
 			keySize = k
 			minScore = score
@@ -128,21 +128,21 @@ func detectKeySize(cipherText []byte, minKeySize, maxKeySize, comparisons int) (
 	return keySize, minScore
 }
 
-func scoreKeySize(cipherText []byte, keySize, comparisons int) float64 {
-	if comparisons <= 0 {
-		panic("comparisons must be greater than 0")
+func scoreKeySize(cipherText []byte, keySize, blockComparisons int) float64 {
+	if blockComparisons <= 0 {
+		panic("blockComparisons must be greater than 0")
 	}
-	if comparisons >= len(cipherText)/keySize {
-		panic("comparisons must be less than len(cipherText)/keySize")
+	if blockComparisons >= len(cipherText)/keySize {
+		panic("blockComparisons must be less than len(cipherText)/keySize")
 	}
 
 	var dist int
-	for i := 0; i < comparisons; i++ {
+	for i := 0; i < blockComparisons; i++ {
 		low, mid, high := keySize*i, keySize*(i+1), keySize*(i+2)
 		dist += hammingDistance(cipherText[low:mid], cipherText[mid:high])
 	}
 
-	return (float64(dist) / float64(comparisons)) / float64(keySize)
+	return (float64(dist) / float64(blockComparisons)) / float64(keySize)
 }
 
 func hammingDistance(a, b []byte) int {
@@ -157,13 +157,13 @@ func hammingDistance(a, b []byte) int {
 	return dist
 }
 
-func transposeChunks(s []byte, chunkSize int) [][]byte {
-	if chunkSize <= 0 {
+func transposeBlocks(s []byte, blockSize int) [][]byte {
+	if blockSize <= 0 {
 		panic("n must be greater than 0")
 	}
-	result := make([][]byte, min(len(s), chunkSize))
-	for i := 0; i < chunkSize; i++ {
-		for j := i; j < len(s); j += chunkSize {
+	result := make([][]byte, min(len(s), blockSize))
+	for i := 0; i < blockSize; i++ {
+		for j := i; j < len(s); j += blockSize {
 			result[i] = append(result[i], s[j])
 		}
 	}
