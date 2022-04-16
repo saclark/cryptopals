@@ -9,10 +9,10 @@ import (
 
 func TestScoreKeySize(t *testing.T) {
 	testCases := []struct {
-		cipherText  []byte
-		keySize     int
-		comparisons int
-		want        float64
+		ciphertext       []byte
+		keySize          int
+		blockComparisons int
+		want             float64
 	}{
 		{[]byte("12345678910"), 1, 9, 1.777778},
 		{[]byte("12345678910"), 2, 1, 1.5},
@@ -26,8 +26,8 @@ func TestScoreKeySize(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%s, %d, %d", tc.cipherText, tc.keySize, tc.comparisons), func(t *testing.T) {
-			got := scoreKeySize(tc.cipherText, tc.keySize, tc.comparisons)
+		t.Run(fmt.Sprintf("%s, %d, %d", tc.ciphertext, tc.keySize, tc.blockComparisons), func(t *testing.T) {
+			got := scoreKeySize(tc.ciphertext, tc.keySize, tc.blockComparisons)
 			if tc.want != math.Round(got*1000000)/1000000 {
 				t.Errorf("want: '%f', got: '%f'", tc.want, got)
 			}

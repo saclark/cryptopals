@@ -55,13 +55,13 @@ func max(a, b int) int {
 // DetectRepeatingByteXORKey returns a single byte and a score representing the
 // most promising (highest scoring) byte that could have been used as a
 // reapeating key in an XOR cipher with the given cipher text.
-func DetectRepeatingByteXORKey(cipherText []byte) (byte, float64) {
+func DetectRepeatingByteXORKey(ciphertext []byte) (byte, float64) {
 	var key byte
 	var score float64
 	for i := 0; i < 256; i++ {
 		k := byte(i)
-		plainText := RepeatingByteXOR(cipherText, k)
-		s := englishScore(plainText)
+		plaintext := RepeatingByteXOR(ciphertext, k)
+		s := englishScore(plaintext)
 		if s >= score {
 			key = k
 			score = s
@@ -88,26 +88,26 @@ func englishScore(s []byte) float64 {
 // reapeating key in an XOR cipher with the given cipher text. It will attempt
 // to detect a key no shorter than minKeySize and no longer than maxKeySize. The
 // blockComparisons argument specifies the number of consecutive blocks of
-// bytes, up to maxKeySize long, from cipherText that are to be compared when
+// bytes, up to maxKeySize long, from ciphertext that are to be compared when
 // detecting the key size. It panics if minKeySize, maxKeySize, or
 // blockComparisons is <= 0, if maxKeySize is less than minKeySize, or if
-// blockComparisons is >= len(cipherText)/maxKeySize.
-func DetectRepeatingXORKey(cipherText []byte, minKeySize, maxKeySize, blockComparisons int) ([]byte, float64) {
-	keySize, _ := detectKeySize(cipherText, minKeySize, maxKeySize, blockComparisons)
-	keyGroup := transposeBlocks(cipherText, keySize)
+// blockComparisons is >= len(ciphertext)/maxKeySize.
+func DetectRepeatingXORKey(ciphertext []byte, minKeySize, maxKeySize, blockComparisons int) ([]byte, float64) {
+	keySize, _ := detectKeySize(ciphertext, minKeySize, maxKeySize, blockComparisons)
+	keyByteGroups := transposeBlocks(ciphertext, keySize)
 
-	decodedKey := make([]byte, len(keyGroup))
-	for i, group := range keyGroup {
+	key := make([]byte, len(keyByteGroups))
+	for i, group := range keyByteGroups {
 		b, _ := DetectRepeatingByteXORKey(group)
-		decodedKey[i] = b
+		key[i] = b
 	}
 
-	plainText := RepeatingXOR(cipherText, decodedKey)
+	plaintext := RepeatingXOR(ciphertext, key)
 
-	return decodedKey, englishScore(plainText)
+	return key, englishScore(plaintext)
 }
 
-func detectKeySize(cipherText []byte, minKeySize, maxKeySize, blockComparisons int) (int, float64) {
+func detectKeySize(ciphertext []byte, minKeySize, maxKeySize, blockComparisons int) (int, float64) {
 	if minKeySize <= 0 || maxKeySize <= 0 {
 		panic("minKeySize and maxKeySize must be greater than 0")
 	}
@@ -118,7 +118,7 @@ func detectKeySize(cipherText []byte, minKeySize, maxKeySize, blockComparisons i
 	var keySize int
 	minScore := math.MaxFloat64
 	for k := maxKeySize; k >= minKeySize; k-- {
-		score := scoreKeySize(cipherText, k, blockComparisons)
+		score := scoreKeySize(ciphertext, k, blockComparisons)
 		if score < minScore {
 			keySize = k
 			minScore = score
@@ -128,18 +128,18 @@ func detectKeySize(cipherText []byte, minKeySize, maxKeySize, blockComparisons i
 	return keySize, minScore
 }
 
-func scoreKeySize(cipherText []byte, keySize, blockComparisons int) float64 {
+func scoreKeySize(ciphertext []byte, keySize, blockComparisons int) float64 {
 	if blockComparisons <= 0 {
 		panic("blockComparisons must be greater than 0")
 	}
-	if blockComparisons >= len(cipherText)/keySize {
-		panic("blockComparisons must be less than len(cipherText)/keySize")
+	if blockComparisons >= len(ciphertext)/keySize {
+		panic("blockComparisons must be less than len(ciphertext)/keySize")
 	}
 
 	var dist int
 	for i := 0; i < blockComparisons; i++ {
 		low, mid, high := keySize*i, keySize*(i+1), keySize*(i+2)
-		dist += hammingDistance(cipherText[low:mid], cipherText[mid:high])
+		dist += hammingDistance(ciphertext[low:mid], ciphertext[mid:high])
 	}
 
 	return (float64(dist) / float64(blockComparisons)) / float64(keySize)
@@ -159,7 +159,7 @@ func hammingDistance(a, b []byte) int {
 
 func transposeBlocks(s []byte, blockSize int) [][]byte {
 	if blockSize <= 0 {
-		panic("n must be greater than 0")
+		panic("blockSize must be greater than 0")
 	}
 	result := make([][]byte, min(len(s), blockSize))
 	for i := 0; i < blockSize; i++ {

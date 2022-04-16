@@ -55,9 +55,9 @@ func TestChallenge3(t *testing.T) {
 	want := "Cooking MC's like a pound of bacon"
 
 	key, _ := xor.DetectRepeatingByteXORKey(input)
-	plainText := xor.RepeatingByteXOR(input, key)
+	plaintext := xor.RepeatingByteXOR(input, key)
 
-	got := string(plainText)
+	got := string(plaintext)
 	if want != got {
 		t.Errorf("want: '%s', got: '%s'", want, got)
 	}
@@ -74,14 +74,14 @@ func TestChallenge4(t *testing.T) {
 	defer file.Close()
 
 	var score float64
-	var plainText []byte
+	var plaintext []byte
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := hexMustDecodeString(scanner.Text())
 		key, s := xor.DetectRepeatingByteXORKey(line)
 		if s >= score {
 			score = s
-			plainText = xor.RepeatingByteXOR(line, key)
+			plaintext = xor.RepeatingByteXOR(line, key)
 		}
 	}
 
@@ -89,7 +89,7 @@ func TestChallenge4(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := string(plainText)
+	got := string(plaintext)
 	if want != got {
 		t.Errorf("want: '%s', got: '%s'", want, got)
 	}
