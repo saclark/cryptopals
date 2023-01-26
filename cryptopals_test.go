@@ -58,7 +58,7 @@ func TestChallenge3(t *testing.T) {
 
 	got := string(plaintext)
 	if want != got {
-		t.Errorf("want: '%s', got: '%s'", want, got)
+		t.Errorf("want: '%x', got: '%x'", want, got)
 	}
 }
 
@@ -90,7 +90,7 @@ func TestChallenge4(t *testing.T) {
 
 	got := string(plaintext)
 	if want != got {
-		t.Errorf("want: '%s', got: '%s'", want, got)
+		t.Errorf("want: '%x', got: '%x'", want, got)
 	}
 }
 
@@ -126,6 +126,6 @@ func TestChallenge6(t *testing.T) {
 
 	got := string(key)
 	if want != got {
-		t.Errorf("want: '%s', got: '%s'", want, got)
+		t.Errorf("want: '%x', got: '%x'", want, got)
 	}
 }
