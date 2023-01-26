@@ -119,11 +119,6 @@ func TestChallenge6(t *testing.T) {
 
 	key, _ := xor.DetectRepeatingXORKey(b, 2, 40, 12)
 
-	// err = os.WriteFile("6_decoded.txt", xor.RepeatingXOR(b, key), 0644)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
-
 	got := string(key)
 	if want != got {
 		t.Errorf("want: '%x', got: '%x'", want, got)
