@@ -45,13 +45,6 @@ func RepeatingXOR(a, b []byte) []byte {
 	return result
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 // DetectRepeatingByteXORKey returns a single byte and a score representing the
 // most promising (highest scoring) byte that could have been used as a
 // reapeating key in an XOR cipher with the given cipher text.
@@ -168,6 +161,13 @@ func transposeBlocks(s []byte, blockSize int) [][]byte {
 		}
 	}
 	return result
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func min(a, b int) int {
