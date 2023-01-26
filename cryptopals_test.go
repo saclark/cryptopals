@@ -64,7 +64,7 @@ func TestChallenge3(t *testing.T) {
 }
 
 func TestChallenge4(t *testing.T) {
-	inputFile := "challenge-data/4.txt"
+	inputFile := "data/4.txt"
 	want := "Now that the party is jumping\n"
 
 	file, err := os.Open(inputFile)
@@ -109,7 +109,7 @@ func TestChallenge5(t *testing.T) {
 }
 
 func TestChallenge6(t *testing.T) {
-	inputFile := "challenge-data/6.txt"
+	inputFile := "data/6.txt"
 	want := "Terminator X: Bring the noise"
 
 	b, err := ioutil.ReadFile(inputFile)
