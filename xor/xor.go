@@ -29,7 +29,7 @@ func RepeatingByteXOR(a []byte, b byte) []byte {
 	return result
 }
 
-// RepeatingByteXOR XORs two byte arrays that may or may not be of equal length.
+// RepeatingXOR XORs two byte arrays that may or may not be of equal length.
 // If one byte array is shorter, it will be repeated.
 func RepeatingXOR(a, b []byte) []byte {
 	if len(a) == 0 || len(b) == 0 {
@@ -83,7 +83,7 @@ func englishScore(s []byte) float64 {
 	return score
 }
 
-// DetectRepeatingByteXORKey returns a key and a score representing the
+// DetectRepeatingXORKey returns a key and a score representing the
 // most promising (highest scoring) key that could have been used as a
 // reapeating key in an XOR cipher with the given cipher text. It will attempt
 // to detect a key no shorter than minKeySize and no longer than maxKeySize. The
