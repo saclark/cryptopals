@@ -1,9 +1,6 @@
 package xor
 
-import (
-	"math"
-	"math/bits"
-)
+import "math"
 
 // Fixed XORs two byte arrays of equal length. It a panics if the byte arrays
 // are not of equal length.
@@ -36,7 +33,7 @@ func Repeating(a, b []byte) []byte {
 		return []byte{}
 	}
 
-	l := max(len(a), len(b))
+	l := maxInt(len(a), len(b))
 	result := make([]byte, l)
 	for i := 0; i < l; i++ {
 		result[i] = a[i%len(a)] ^ b[i%len(b)]
@@ -49,31 +46,19 @@ func Repeating(a, b []byte) []byte {
 // most promising (highest scoring) byte that could have been used as a
 // reapeating key in an XOR cipher with the given cipher text.
 func DetectRepeatingByteKey(ciphertext []byte) (byte, float64) {
-	var key byte
-	var score float64
+	var (
+		key   byte
+		score float64
+	)
 	for i := 0; i < 256; i++ {
 		k := byte(i)
 		plaintext := RepeatingByte(ciphertext, k)
-		s := englishScore(plaintext)
+		s := scoreEnglishLikeness(plaintext)
 		if s >= score {
-			key = k
-			score = s
+			key, score = k, s
 		}
 	}
 	return key, score
-}
-
-func englishScore(s []byte) float64 {
-	var score float64
-	for _, b := range s {
-		switch {
-		case (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z'):
-			score++
-		case b == ' ':
-			score += 3
-		}
-	}
-	return score
 }
 
 // DetectRepeatingKey returns a key and a score representing the
@@ -97,7 +82,7 @@ func DetectRepeatingKey(ciphertext []byte, minKeySize, maxKeySize, blockComparis
 
 	plaintext := Repeating(ciphertext, key)
 
-	return key, englishScore(plaintext)
+	return key, scoreEnglishLikeness(plaintext)
 }
 
 func detectKeySize(ciphertext []byte, minKeySize, maxKeySize, blockComparisons int) (int, float64) {
@@ -111,68 +96,11 @@ func detectKeySize(ciphertext []byte, minKeySize, maxKeySize, blockComparisons i
 	var keySize int
 	minScore := math.MaxFloat64
 	for k := maxKeySize; k >= minKeySize; k-- {
-		score := scoreKeySize(ciphertext, k, blockComparisons)
+		score := scoreRepeatingKeySize(ciphertext[:k*(blockComparisons+1)], k)
 		if score < minScore {
-			keySize = k
-			minScore = score
+			keySize, minScore = k, score
 		}
 	}
 
 	return keySize, minScore
-}
-
-func scoreKeySize(ciphertext []byte, keySize, blockComparisons int) float64 {
-	if blockComparisons <= 0 {
-		panic("blockComparisons must be greater than 0")
-	}
-	if blockComparisons >= len(ciphertext)/keySize {
-		panic("blockComparisons must be less than len(ciphertext)/keySize")
-	}
-
-	var dist int
-	for i := 0; i < blockComparisons; i++ {
-		low, mid, high := keySize*i, keySize*(i+1), keySize*(i+2)
-		dist += hammingDistance(ciphertext[low:mid], ciphertext[mid:high])
-	}
-
-	return (float64(dist) / float64(blockComparisons)) / float64(keySize)
-}
-
-func hammingDistance(a, b []byte) int {
-	var dist int
-	for i := 0; i < len(a) || i < len(b); i++ {
-		if i < len(a) && i < len(b) {
-			dist += bits.OnesCount8(a[i] ^ b[i])
-		} else {
-			dist += 8
-		}
-	}
-	return dist
-}
-
-func transposeBlocks(s []byte, blockSize int) [][]byte {
-	if blockSize <= 0 {
-		panic("blockSize must be greater than 0")
-	}
-	result := make([][]byte, min(len(s), blockSize))
-	for i := 0; i < blockSize; i++ {
-		for j := i; j < len(s); j += blockSize {
-			result[i] = append(result[i], s[j])
-		}
-	}
-	return result
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
