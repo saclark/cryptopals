@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/base64"
 	"encoding/hex"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -112,7 +111,7 @@ func TestChallenge6(t *testing.T) {
 	inputFile := "data/6.txt"
 	want := "Terminator X: Bring the noise"
 
-	b, err := ioutil.ReadFile(inputFile)
+	b, err := os.ReadFile(inputFile)
 	if err != nil {
 		t.Fatal(err)
 	}
