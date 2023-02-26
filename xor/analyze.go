@@ -2,6 +2,8 @@ package xor
 
 import "math/bits"
 
+// scoreEnglishLikeness scores the likelihood that s represents english text.
+// The higher the score the more likely.
 func scoreEnglishLikeness(s []byte) float64 {
 	var score float64
 	for _, b := range s {
@@ -15,12 +17,15 @@ func scoreEnglishLikeness(s []byte) float64 {
 	return score
 }
 
+// scoreRepeatingKeySize scores the likelihood that a given ciphertext was
+// produced by XOR-ing keySize byte blocks of the plaintext with the same
+// keySize byte key. The lower the score the more likely.
 func scoreRepeatingKeySize(ciphertext []byte, keySize int) float64 {
 	if keySize <= 0 {
-		panic("keysize not greater than 0")
+		panic("xor.scoreRepeatingKeySize: keysize not > 0")
 	}
 	if len(ciphertext) <= keySize || len(ciphertext)%keySize != 0 {
-		panic("ciphertext size not a multiple of key size larger than key size")
+		panic("xor.scoreRepeatingKeySize: ciphertext size not multiple of key size > key size")
 	}
 
 	var dist int
@@ -35,7 +40,7 @@ func scoreRepeatingKeySize(ciphertext []byte, keySize int) float64 {
 
 func hammingDistance(a, b []byte) int {
 	if len(a) != len(b) {
-		panic("a and b are not the same length")
+		panic("xor.hammingDistance: a and b not same length")
 	}
 	var dist int
 	for i := 0; i < len(a); i++ {
@@ -44,9 +49,11 @@ func hammingDistance(a, b []byte) int {
 	return dist
 }
 
+// transposeBlocks partitions s into blockSize byte blocks and then transposes
+// those blocks.
 func transposeBlocks(s []byte, blockSize int) [][]byte {
 	if blockSize <= 0 {
-		panic("blockSize not greater than 0")
+		panic("xor.transposeBlocks: blockSize not > 0")
 	}
 	result := make([][]byte, minInt(len(s), blockSize))
 	for i := 0; i < blockSize; i++ {

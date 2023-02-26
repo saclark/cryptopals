@@ -42,7 +42,7 @@ func TestChallenge2(t *testing.T) {
 	inputB := hexMustDecodeString("686974207468652062756c6c277320657965")
 	want := "746865206b696420646f6e277420706c6179"
 
-	xoredBytes := xor.Fixed(inputA, inputB)
+	xoredBytes := xor.BytesFixed(inputA, inputB)
 
 	got := hex.EncodeToString(xoredBytes)
 	if want != got {
@@ -55,7 +55,7 @@ func TestChallenge3(t *testing.T) {
 	want := "Cooking MC's like a pound of bacon"
 
 	key, _ := xor.DetectRepeatingByteKey(input)
-	plaintext := xor.RepeatingByte(input, key)
+	plaintext := xor.BytesRepeating(input, []byte{key})
 
 	got := string(plaintext)
 	if want != got {
@@ -73,15 +73,15 @@ func TestChallenge4(t *testing.T) {
 	}
 	defer file.Close()
 
-	var score float64
+	var maxScore float64
 	var plaintext []byte
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := hexMustDecodeString(scanner.Text())
 		key, s := xor.DetectRepeatingByteKey(line)
-		if s >= score {
-			score = s
-			plaintext = xor.RepeatingByte(line, key)
+		if s >= maxScore {
+			maxScore = s
+			plaintext = xor.BytesRepeating(line, []byte{key})
 		}
 	}
 
@@ -100,11 +100,11 @@ func TestChallenge5(t *testing.T) {
 	key := []byte("ICE")
 	want := "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
 
-	encrypted := xor.Repeating(input, key)
+	encrypted := xor.BytesRepeating(input, key)
 
 	got := hex.EncodeToString(encrypted)
 	if want != got {
-		t.Errorf("\nwant: '%s'\ngot : '%s'", want, got)
+		t.Errorf("want: '%s'got : '%s'", want, got)
 	}
 }
 
@@ -118,7 +118,7 @@ func TestChallenge6(t *testing.T) {
 	}
 	b = base64MustDecodeString(string(b))
 
-	key, _ := xor.DetectRepeatingKey(b, 2, 40, 12)
+	key, _ := xor.DetectRepeatingKey(b, 2, 40)
 
 	got := string(key)
 	if want != got {
@@ -159,15 +159,15 @@ func TestChallenge8(t *testing.T) {
 	defer file.Close()
 
 	var got string
-	var score float64
+	var maxScore float64
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		hexstr := scanner.Text()
 		line := hexMustDecodeString(hexstr)
 		s := aes.DetectECBEncryption(line)
-		if s > score {
+		if s > maxScore {
 			got = hexstr
-			score = s
+			maxScore = s
 		}
 	}
 
