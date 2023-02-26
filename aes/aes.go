@@ -4,9 +4,9 @@ import (
 	"crypto/aes"
 )
 
-// DecryptAESECB decrypts a ciphertext encrypted via AES-128 in ECB mode using
+// DecryptECB decrypts a ciphertext encrypted via AES-128 in ECB mode using
 // the given key.
-func DecryptAESECB(ciphertext []byte, key []byte) ([]byte, error) {
+func DecryptECB(ciphertext []byte, key []byte) ([]byte, error) {
 	cipher, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err

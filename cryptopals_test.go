@@ -217,7 +217,7 @@ Play that funky music
 	}
 	ciphertext = base64MustDecodeString(string(ciphertext))
 
-	plaintext, err := aes.DecryptAESECB(ciphertext, key)
+	plaintext, err := aes.DecryptECB(ciphertext, key)
 	if err != nil {
 		t.Fatal(err)
 	}
