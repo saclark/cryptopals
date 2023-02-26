@@ -7,18 +7,19 @@ import (
 // The AES block size in bytes.
 const BlockSize = 16
 
-// DecryptECB decrypts a ciphertext encrypted via AES-128 in ECB mode using
-// the given key.
+// DecryptECB decrypts a ciphertext encrypted via AES in ECB mode, leaving any
+// plaintext padding in-tact. The key argument should be the AES key, either 16,
+// 24, or 32 bytes to select AES-128, AES-192, or AES-256.
 func DecryptECB(ciphertext []byte, key []byte) ([]byte, error) {
-	cipher, err := aes.NewCipher(key)
+	c, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
 
-	k := cipher.BlockSize()
+	k := c.BlockSize()
 	plaintext := make([]byte, len(ciphertext))
 	for i := 0; i+k <= len(ciphertext); i = i + k {
-		cipher.Decrypt(plaintext[i:i+k], ciphertext[i:i+k])
+		c.Decrypt(plaintext[i:i+k], ciphertext[i:i+k])
 	}
 
 	return plaintext, nil
