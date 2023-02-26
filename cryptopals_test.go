@@ -42,7 +42,7 @@ func TestChallenge2(t *testing.T) {
 	inputB := hexMustDecodeString("686974207468652062756c6c277320657965")
 	want := "746865206b696420646f6e277420706c6179"
 
-	xoredBytes := xor.FixedXOR(inputA, inputB)
+	xoredBytes := xor.Fixed(inputA, inputB)
 
 	got := hex.EncodeToString(xoredBytes)
 	if want != got {
@@ -54,8 +54,8 @@ func TestChallenge3(t *testing.T) {
 	input := hexMustDecodeString("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
 	want := "Cooking MC's like a pound of bacon"
 
-	key, _ := xor.DetectRepeatingByteXORKey(input)
-	plaintext := xor.RepeatingByteXOR(input, key)
+	key, _ := xor.DetectRepeatingByteKey(input)
+	plaintext := xor.RepeatingByte(input, key)
 
 	got := string(plaintext)
 	if want != got {
@@ -78,10 +78,10 @@ func TestChallenge4(t *testing.T) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := hexMustDecodeString(scanner.Text())
-		key, s := xor.DetectRepeatingByteXORKey(line)
+		key, s := xor.DetectRepeatingByteKey(line)
 		if s >= score {
 			score = s
-			plaintext = xor.RepeatingByteXOR(line, key)
+			plaintext = xor.RepeatingByte(line, key)
 		}
 	}
 
@@ -100,7 +100,7 @@ func TestChallenge5(t *testing.T) {
 	key := []byte("ICE")
 	want := "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
 
-	encrypted := xor.RepeatingXOR(input, key)
+	encrypted := xor.Repeating(input, key)
 
 	got := hex.EncodeToString(encrypted)
 	if want != got {
@@ -118,7 +118,7 @@ func TestChallenge6(t *testing.T) {
 	}
 	b = base64MustDecodeString(string(b))
 
-	key, _ := xor.DetectRepeatingXORKey(b, 2, 40, 12)
+	key, _ := xor.DetectRepeatingKey(b, 2, 40, 12)
 
 	got := string(key)
 	if want != got {
