@@ -7,19 +7,105 @@ import (
 	"testing"
 )
 
+func roundToDecimalPlaces(f float64, scale int) float64 {
+	s := float64(1)
+	for i := 0; i < scale; i++ {
+		s *= 10
+	}
+	return math.Round(f*s) / s
+}
+
+func TestRelEngLetterFreqs_SumToOne(t *testing.T) {
+	var got float64
+	for _, f := range relEngCharFreqs {
+		got += f
+	}
+	if roundToDecimalPlaces(got, 7) != 1 {
+		t.Errorf("want: %.7f, got: %.7f", 1.0, got)
+	}
+}
+
 func TestScoreEnglishLikeness(t *testing.T) {
 	tt := []struct {
 		input []byte
 		want  float64
 	}{
-		{[]byte(" "), 3},
-		{[]byte("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ"), float64(55)},
+		{[]byte("A"), 0.0651738},
+		{[]byte("B"), 0.0124248},
+		{[]byte("C"), 0.0217339},
+		{[]byte("D"), 0.0349835},
+		{[]byte("E"), 0.1041442},
+		{[]byte("F"), 0.0197881},
+		{[]byte("G"), 0.0158610},
+		{[]byte("H"), 0.0492888},
+		{[]byte("I"), 0.0558094},
+		{[]byte("J"), 0.0009033},
+		{[]byte("K"), 0.0050529},
+		{[]byte("L"), 0.0331490},
+		{[]byte("M"), 0.0202124},
+		{[]byte("N"), 0.0564513},
+		{[]byte("O"), 0.0596302},
+		{[]byte("P"), 0.0137645},
+		{[]byte("Q"), 0.0008606},
+		{[]byte("R"), 0.0497563},
+		{[]byte("S"), 0.0515760},
+		{[]byte("T"), 0.0729357},
+		{[]byte("U"), 0.0225134},
+		{[]byte("V"), 0.0082903},
+		{[]byte("W"), 0.0171272},
+		{[]byte("X"), 0.0013692},
+		{[]byte("Y"), 0.0145984},
+		{[]byte("Z"), 0.0007836},
+		{[]byte("a"), 0.0651738},
+		{[]byte("b"), 0.0124248},
+		{[]byte("c"), 0.0217339},
+		{[]byte("d"), 0.0349835},
+		{[]byte("e"), 0.1041442},
+		{[]byte("f"), 0.0197881},
+		{[]byte("g"), 0.0158610},
+		{[]byte("h"), 0.0492888},
+		{[]byte("i"), 0.0558094},
+		{[]byte("j"), 0.0009033},
+		{[]byte("k"), 0.0050529},
+		{[]byte("l"), 0.0331490},
+		{[]byte("m"), 0.0202124},
+		{[]byte("n"), 0.0564513},
+		{[]byte("o"), 0.0596302},
+		{[]byte("p"), 0.0137645},
+		{[]byte("q"), 0.0008606},
+		{[]byte("r"), 0.0497563},
+		{[]byte("s"), 0.0515760},
+		{[]byte("t"), 0.0729357},
+		{[]byte("u"), 0.0225134},
+		{[]byte("v"), 0.0082903},
+		{[]byte("w"), 0.0171272},
+		{[]byte("x"), 0.0013692},
+		{[]byte("y"), 0.0145984},
+		{[]byte("z"), 0.0007836},
+		{[]byte(" "), 0.1918182},
+		{[]byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ "), 0.0370370},
+		{[]byte("abcdefghijklmnopqrstuvwxyz "), 0.0370370},
+		{[]byte("THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG!"), 0.0669323},
+		{[]byte("the quick brown fox jumped over the lazy dog!"), 0.0669323},
+		{[]byte("three"), 0.0760538},
 	}
 
 	for _, tc := range tt {
 		t.Run(string(tc.input), func(t *testing.T) {
-			if got := scoreEnglishLikeness(tc.input); got != tc.want {
-				t.Errorf("want: %f, got :%f", tc.want, got)
+			if got := scoreEnglishLikeness(tc.input); roundToDecimalPlaces(got, 7) != tc.want {
+				t.Errorf("want: %.7f, got: %.7f", tc.want, got)
+			}
+		})
+	}
+
+	// Verify non-letter and non-space chars do not contribute to the score.
+	for i := 0; i < 256; i++ {
+		if (i >= 'A' && i <= 'Z') || (i >= 'a' && i <= 'z') || i == ' ' {
+			continue
+		}
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			if got := scoreEnglishLikeness([]byte{byte(i)}); got != 0 {
+				t.Errorf("want: %f, got: %f", 0.0, got)
 			}
 		})
 	}
@@ -52,8 +138,8 @@ func TestScoreRepeatingKeySize(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("%s, %d", tc.ciphertext, tc.keySize), func(t *testing.T) {
 			got := scoreRepeatingKeySize(tc.ciphertext, tc.keySize)
-			if tc.want != math.Round(got*1000000)/1000000 {
-				t.Errorf("want: '%f', got: '%f'", tc.want, got)
+			if tc.want != roundToDecimalPlaces(got, 6) {
+				t.Errorf("want: '%.6f', got: '%.6f'", tc.want, got)
 			}
 		})
 	}
