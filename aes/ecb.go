@@ -7,10 +7,28 @@ import (
 // The AES block size in bytes.
 const BlockSize = 16
 
+// EncryptECB encrypts a plaintext via AES in ECB mode. The key argument should
+// be the AES key, either 16, 24, or 32 bytes to select AES-128, AES-192, or
+// AES-256.
+func EncryptECB(plaintext, key []byte) ([]byte, error) {
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	k := c.BlockSize()
+	ciphertext := make([]byte, len(plaintext))
+	for i := 0; i+k <= len(plaintext); i = i + k {
+		c.Encrypt(ciphertext[i:i+k], plaintext[i:i+k])
+	}
+
+	return ciphertext, nil
+}
+
 // DecryptECB decrypts a ciphertext encrypted via AES in ECB mode, leaving any
 // plaintext padding in-tact. The key argument should be the AES key, either 16,
 // 24, or 32 bytes to select AES-128, AES-192, or AES-256.
-func DecryptECB(ciphertext []byte, key []byte) ([]byte, error) {
+func DecryptECB(ciphertext, key []byte) ([]byte, error) {
 	c, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -25,15 +43,15 @@ func DecryptECB(ciphertext []byte, key []byte) ([]byte, error) {
 	return plaintext, nil
 }
 
-// DetectECBEncryption returns a number in the range [0, 1] indicating the
+// DetectECB returns a number in the range [0, 1] indicating the
 // fraction of blocks of the ciphertext that are duplicated. A higher score
 // indicates a higher likelihood that the ciphertext was encrypted with ECB.
-func DetectECBEncryption(ciphertext []byte) float64 {
+func DetectECB(ciphertext []byte) float64 {
 	if len(ciphertext) == 0 {
-		panic("aes.DetectECBEncryption16: empty ciphertext")
+		panic("aes.DetectECB: empty ciphertext")
 	}
 	if len(ciphertext)%BlockSize != 0 {
-		panic("aes.DetectECBEncryption16: ciphertext size not a multiple of 16")
+		panic("aes.DetectECB: ciphertext size not a multiple of 16")
 	}
 
 	n := len(ciphertext) / BlockSize
