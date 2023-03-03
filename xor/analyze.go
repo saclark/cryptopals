@@ -1,6 +1,77 @@
 package xor
 
-import "math/bits"
+import (
+	"math"
+	"math/bits"
+)
+
+// DetectRepeatingByteKey returns a single byte and a score representing the
+// most promising (highest scoring) byte that could have been used as a
+// reapeating key in an XOR cipher with the given ciphertext.
+func DetectRepeatingByteKey(ciphertext []byte) (key byte, score float64) {
+	for i := 0; i < 256; i++ {
+		k := byte(i)
+		plaintext := make([]byte, len(ciphertext))
+		BytesRepeatingByte(plaintext, ciphertext, k)
+		s := scoreEnglishLikeness(plaintext)
+		if s >= score {
+			key, score = k, s
+		}
+	}
+	return key, score
+}
+
+// DetectRepeatingKey returns a key and a score representing the
+// most promising (highest scoring) key that could have been used as a
+// reapeating key in an XOR cipher with the given cipher text. It will attempt
+// to detect a key no shorter than minKeySize and no longer than maxKeySize. It
+// panics if minKeySize, maxKeySize, or blockComparisons is <= 0,
+// if maxKeySize is < minKeySize, or if maxKeySize is >= len(ciphertext)/2.
+func DetectRepeatingKey(ciphertext []byte, minKeySize, maxKeySize int) (key []byte, score float64) {
+	keySize := detectRepeatingKeySize(ciphertext, minKeySize, maxKeySize)
+	keyByteGroups := transposeBlocks(ciphertext, keySize)
+
+	key = make([]byte, len(keyByteGroups))
+	for i, group := range keyByteGroups {
+		b, _ := DetectRepeatingByteKey(group)
+		key[i] = b
+	}
+
+	plaintext := make([]byte, len(ciphertext))
+	BytesRepeating(plaintext, ciphertext, key)
+
+	return key, scoreEnglishLikeness(plaintext)
+}
+
+// detectRepeatingKeySize detects the most likely key size, in bytes, that
+// could have been used to produce the ciphertext from a cipher using a
+// repeating-key XOR.
+func detectRepeatingKeySize(ciphertext []byte, minKeySize, maxKeySize int) int {
+	if minKeySize <= 0 {
+		panic("xor.detectRepeatingKeySize: minKeySize not > 0")
+	}
+	if maxKeySize <= 0 {
+		panic("xor.detectRepeatingKeySize: maxKeySize not > 0")
+	}
+	if maxKeySize < minKeySize {
+		panic("xor.detectRepeatingKeySize: maxKeySize not >= minKeySize")
+	}
+	if maxKeySize > len(ciphertext)/2 {
+		panic("xor.detectRepeatingKeySize: maxKeySize not <= len(ciphertext)/2")
+	}
+
+	var keySize int
+	minScore := math.MaxFloat64
+	for k := maxKeySize; k >= minKeySize; k-- {
+		n := len(ciphertext) - len(ciphertext)%k
+		score := scoreRepeatingKeySize(ciphertext[:n], k)
+		if score < minScore {
+			keySize, minScore = k, score
+		}
+	}
+
+	return keySize
+}
 
 // Relative frequencies among A-Z (case insensitive) and "space" characters in
 // the english language listed in the order [A, B, ..., Z, space].
@@ -69,25 +140,15 @@ func transposeBlocks(s []byte, blockSize int) [][]byte {
 	if blockSize <= 0 {
 		panic("xor.transposeBlocks: blockSize not > 0")
 	}
-	result := make([][]byte, minInt(len(s), blockSize))
+	n := blockSize
+	if len(s) < n {
+		n = len(s)
+	}
+	result := make([][]byte, n)
 	for i := 0; i < blockSize; i++ {
 		for j := i; j < len(s); j += blockSize {
 			result[i] = append(result[i], s[j])
 		}
 	}
 	return result
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

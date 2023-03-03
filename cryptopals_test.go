@@ -21,12 +21,13 @@ func hexMustDecodeString(s string) []byte {
 	return b
 }
 
-func base64MustDecodeString(s string) []byte {
-	b, err := base64.StdEncoding.DecodeString(s)
+func base64MustDecodeBytes(s []byte) []byte {
+	b := make([]byte, base64.StdEncoding.DecodedLen(len(s)))
+	n, err := base64.StdEncoding.Decode(b, s)
 	if err != nil {
 		panic(err)
 	}
-	return b
+	return b[:n]
 }
 
 // Convert hex to base64
@@ -48,7 +49,8 @@ func TestChallenge2(t *testing.T) {
 	inputB := hexMustDecodeString("686974207468652062756c6c277320657965")
 	want := "746865206b696420646f6e277420706c6179"
 
-	xoredBytes := xor.BytesFixed(inputA, inputB)
+	xoredBytes := make([]byte, len(inputA))
+	xor.BytesFixed(xoredBytes, inputA, inputB)
 
 	got := hex.EncodeToString(xoredBytes)
 	if want != got {
@@ -62,8 +64,9 @@ func TestChallenge3(t *testing.T) {
 	input := hexMustDecodeString("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
 	want := "Cooking MC's like a pound of bacon"
 
+	plaintext := make([]byte, len(input))
 	key, _ := xor.DetectRepeatingByteKey(input)
-	plaintext := xor.BytesRepeating(input, []byte{key})
+	xor.BytesRepeatingByte(plaintext, input, key)
 
 	got := string(plaintext)
 	if want != got {
@@ -91,7 +94,8 @@ func TestChallenge4(t *testing.T) {
 		key, s := xor.DetectRepeatingByteKey(line)
 		if s >= maxScore {
 			maxScore = s
-			plaintext = xor.BytesRepeating(line, []byte{key})
+			plaintext = make([]byte, len(line))
+			xor.BytesRepeatingByte(plaintext, line, key)
 		}
 	}
 
@@ -112,9 +116,10 @@ func TestChallenge5(t *testing.T) {
 	key := []byte("ICE")
 	want := "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
 
-	encrypted := xor.BytesRepeating(input, key)
+	ciphertext := make([]byte, len(input))
+	xor.BytesRepeating(ciphertext, input, key)
 
-	got := hex.EncodeToString(encrypted)
+	got := hex.EncodeToString(ciphertext)
 	if want != got {
 		t.Errorf("want: '%s'got : '%s'", want, got)
 	}
@@ -130,7 +135,7 @@ func TestChallenge6(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b = base64MustDecodeString(string(b))
+	b = base64MustDecodeBytes(b)
 
 	key, _ := xor.DetectRepeatingKey(b, 2, 40)
 
@@ -151,7 +156,7 @@ func TestChallenge7(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ciphertext = base64MustDecodeString(string(ciphertext))
+	ciphertext = base64MustDecodeBytes(ciphertext)
 
 	plaintext, err := aes.DecryptECB(ciphertext, key)
 	if err != nil {
