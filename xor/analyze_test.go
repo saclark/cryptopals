@@ -7,21 +7,76 @@ import (
 	"testing"
 )
 
-func roundToDecimalPlaces(f float64, scale int) float64 {
-	s := float64(1)
-	for i := 0; i < scale; i++ {
-		s *= 10
+func TestDetectRepeatingByteKey_CorrectlyDetectsTheKey(t *testing.T) {
+	plaintext := []byte("Yo, microphone check one, two, what is this?")
+	ciphertext := make([]byte, len(plaintext))
+	wantScore := 6.8653875
+	for i := 0; i < 256; i++ {
+		b := byte(i)
+		BytesRepeatingByte(ciphertext, plaintext, b)
+
+		key, score := DetectRepeatingByteKey(ciphertext)
+		if b != key {
+			t.Fatalf("want: %x, got: %x", b, key)
+		}
+		if wantScore != roundToDecimalPlaces(score, 7) {
+			t.Fatalf("want: %.7f, got: %.7f", wantScore, score)
+		}
 	}
-	return math.Round(f*s) / s
+}
+
+func TestDetectRepeatingByteKey_CorrectlyScoresTheDetectedKey(t *testing.T) {
+	tt := []struct {
+		plaintext []byte
+		score     float64
+	}{
+		{[]byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ "), 3.7037037},
+		{[]byte("abcdefghijklmnopqrstuvwxyz "), 3.7037037},
+		{[]byte("ThE qUiCk BrOwN fOx JuMpEd OvEr ThE lAzY dOg!"), 6.6932273},
+		{[]byte("ThE, qUiCk. BrOwN; fOx? JuMpEd' OvEr( ThE$ lAzY] dOg!"), 5.6829289},
+	}
+
+	b := byte('X')
+	for _, tc := range tt {
+		t.Run(string(tc.plaintext), func(t *testing.T) {
+			ciphertext := make([]byte, len(tc.plaintext))
+			BytesRepeatingByte(ciphertext, tc.plaintext, b)
+			key, score := DetectRepeatingByteKey(ciphertext)
+			if b != key {
+				t.Errorf("want: %x, got: %x", b, key)
+			}
+			if tc.score != roundToDecimalPlaces(score, 7) {
+				t.Errorf("want: %.7f, got: %.7f", tc.score, score)
+			}
+		})
+	}
+}
+
+func TestDetectRepeatingKey_CorrectlyDetectsTheKey(t *testing.T) {
+	plaintext := []byte("Yo, microphone check one, two, what is this?")
+	wantKey := []byte("abc")
+	ciphertext := make([]byte, len(plaintext))
+	wantScore := 5.3456014
+
+	BytesRepeating(ciphertext, plaintext, wantKey)
+
+	key, score := DetectRepeatingKey(ciphertext, 1, 5)
+	if bytes.Equal(wantKey, key) {
+		t.Fatalf("want: %x, got: %x", wantKey, key)
+	}
+	if wantScore != roundToDecimalPlaces(score, 7) {
+		t.Fatalf("want: %.7f, got: %.7f", wantScore, score)
+	}
 }
 
 func TestRelEngLetterFreqs_SumToOne(t *testing.T) {
+	const want = 1.0
 	var got float64
 	for _, f := range relEngCharFreqs {
 		got += f
 	}
-	if roundToDecimalPlaces(got, 7) != 1 {
-		t.Errorf("want: %.7f, got: %.7f", 1.0, got)
+	if roundToDecimalPlaces(got, 7) != want {
+		t.Errorf("want: %.7f, got: %.7f", want, got)
 	}
 }
 
@@ -30,64 +85,64 @@ func TestScoreEnglishLikeness(t *testing.T) {
 		input []byte
 		want  float64
 	}{
-		{[]byte("A"), 0.0651738},
-		{[]byte("B"), 0.0124248},
-		{[]byte("C"), 0.0217339},
-		{[]byte("D"), 0.0349835},
-		{[]byte("E"), 0.1041442},
-		{[]byte("F"), 0.0197881},
-		{[]byte("G"), 0.0158610},
-		{[]byte("H"), 0.0492888},
-		{[]byte("I"), 0.0558094},
-		{[]byte("J"), 0.0009033},
-		{[]byte("K"), 0.0050529},
-		{[]byte("L"), 0.0331490},
-		{[]byte("M"), 0.0202124},
-		{[]byte("N"), 0.0564513},
-		{[]byte("O"), 0.0596302},
-		{[]byte("P"), 0.0137645},
-		{[]byte("Q"), 0.0008606},
-		{[]byte("R"), 0.0497563},
-		{[]byte("S"), 0.0515760},
-		{[]byte("T"), 0.0729357},
-		{[]byte("U"), 0.0225134},
-		{[]byte("V"), 0.0082903},
-		{[]byte("W"), 0.0171272},
-		{[]byte("X"), 0.0013692},
-		{[]byte("Y"), 0.0145984},
-		{[]byte("Z"), 0.0007836},
-		{[]byte("a"), 0.0651738},
-		{[]byte("b"), 0.0124248},
-		{[]byte("c"), 0.0217339},
-		{[]byte("d"), 0.0349835},
-		{[]byte("e"), 0.1041442},
-		{[]byte("f"), 0.0197881},
-		{[]byte("g"), 0.0158610},
-		{[]byte("h"), 0.0492888},
-		{[]byte("i"), 0.0558094},
-		{[]byte("j"), 0.0009033},
-		{[]byte("k"), 0.0050529},
-		{[]byte("l"), 0.0331490},
-		{[]byte("m"), 0.0202124},
-		{[]byte("n"), 0.0564513},
-		{[]byte("o"), 0.0596302},
-		{[]byte("p"), 0.0137645},
-		{[]byte("q"), 0.0008606},
-		{[]byte("r"), 0.0497563},
-		{[]byte("s"), 0.0515760},
-		{[]byte("t"), 0.0729357},
-		{[]byte("u"), 0.0225134},
-		{[]byte("v"), 0.0082903},
-		{[]byte("w"), 0.0171272},
-		{[]byte("x"), 0.0013692},
-		{[]byte("y"), 0.0145984},
-		{[]byte("z"), 0.0007836},
-		{[]byte(" "), 0.1918182},
-		{[]byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ "), 0.0370370},
-		{[]byte("abcdefghijklmnopqrstuvwxyz "), 0.0370370},
-		{[]byte("THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG!"), 0.0669323},
-		{[]byte("the quick brown fox jumped over the lazy dog!"), 0.0669323},
-		{[]byte("three"), 0.0760538},
+		{[]byte("A"), 6.51738},
+		{[]byte("B"), 1.24248},
+		{[]byte("C"), 2.17339},
+		{[]byte("D"), 3.49835},
+		{[]byte("E"), 10.41442},
+		{[]byte("F"), 1.97881},
+		{[]byte("G"), 1.58610},
+		{[]byte("H"), 4.92888},
+		{[]byte("I"), 5.58094},
+		{[]byte("J"), 0.09033},
+		{[]byte("K"), 0.50529},
+		{[]byte("L"), 3.31490},
+		{[]byte("M"), 2.02124},
+		{[]byte("N"), 5.64513},
+		{[]byte("O"), 5.96302},
+		{[]byte("P"), 1.37645},
+		{[]byte("Q"), 0.08606},
+		{[]byte("R"), 4.97563},
+		{[]byte("S"), 5.15760},
+		{[]byte("T"), 7.29357},
+		{[]byte("U"), 2.25134},
+		{[]byte("V"), 0.82903},
+		{[]byte("W"), 1.71272},
+		{[]byte("X"), 0.13692},
+		{[]byte("Y"), 1.45984},
+		{[]byte("Z"), 0.07836},
+		{[]byte("a"), 6.51738},
+		{[]byte("b"), 1.24248},
+		{[]byte("c"), 2.17339},
+		{[]byte("d"), 3.49835},
+		{[]byte("e"), 10.41442},
+		{[]byte("f"), 1.97881},
+		{[]byte("g"), 1.58610},
+		{[]byte("h"), 4.92888},
+		{[]byte("i"), 5.58094},
+		{[]byte("j"), 0.09033},
+		{[]byte("k"), 0.50529},
+		{[]byte("l"), 3.31490},
+		{[]byte("m"), 2.02124},
+		{[]byte("n"), 5.64513},
+		{[]byte("o"), 5.96302},
+		{[]byte("p"), 1.37645},
+		{[]byte("q"), 0.08606},
+		{[]byte("r"), 4.97563},
+		{[]byte("s"), 5.15760},
+		{[]byte("t"), 7.29357},
+		{[]byte("u"), 2.25134},
+		{[]byte("v"), 0.82903},
+		{[]byte("w"), 1.71272},
+		{[]byte("x"), 0.13692},
+		{[]byte("y"), 1.45984},
+		{[]byte("z"), 0.07836},
+		{[]byte(" "), 19.18182},
+		{[]byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ "), 3.7037037},
+		{[]byte("abcdefghijklmnopqrstuvwxyz "), 3.7037037},
+		{[]byte("THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG!"), 6.6932273},
+		{[]byte("the quick brown fox jumped over the lazy dog!"), 6.6932273},
+		{[]byte("three"), 7.6053840},
 	}
 
 	for _, tc := range tt {
@@ -213,4 +268,12 @@ func TestTransposeBlocks(t *testing.T) {
 			}
 		})
 	}
+}
+
+func roundToDecimalPlaces(f float64, scale int) float64 {
+	s := float64(1)
+	for i := 0; i < scale; i++ {
+		s *= 10
+	}
+	return math.Round(f*s) / s
 }

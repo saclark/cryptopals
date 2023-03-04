@@ -9,12 +9,12 @@ import (
 // most promising (highest scoring) byte that could have been used as a
 // reapeating key in an XOR cipher with the given ciphertext.
 func DetectRepeatingByteKey(ciphertext []byte) (key byte, score float64) {
+	plaintext := make([]byte, len(ciphertext))
 	for i := 0; i < 256; i++ {
 		k := byte(i)
-		plaintext := make([]byte, len(ciphertext))
 		BytesRepeatingByte(plaintext, ciphertext, k)
 		s := scoreEnglishLikeness(plaintext)
-		if s >= score {
+		if s > score {
 			key, score = k, s
 		}
 	}
@@ -25,8 +25,8 @@ func DetectRepeatingByteKey(ciphertext []byte) (key byte, score float64) {
 // most promising (highest scoring) key that could have been used as a
 // reapeating key in an XOR cipher with the given cipher text. It will attempt
 // to detect a key no shorter than minKeySize and no longer than maxKeySize. It
-// panics if minKeySize, maxKeySize, or blockComparisons is <= 0,
-// if maxKeySize is < minKeySize, or if maxKeySize is >= len(ciphertext)/2.
+// panics if minKeySize or maxKeySize are <= 0, if maxKeySize is < minKeySize,
+// or if maxKeySize is > len(ciphertext)/2.
 func DetectRepeatingKey(ciphertext []byte, minKeySize, maxKeySize int) (key []byte, score float64) {
 	keySize := detectRepeatingKeySize(ciphertext, minKeySize, maxKeySize)
 	keyByteGroups := transposeBlocks(ciphertext, keySize)
@@ -99,7 +99,7 @@ func scoreEnglishLikeness(s []byte) float64 {
 			score += relEngCharFreqs[len(relEngCharFreqs)-1]
 		}
 	}
-	return score / float64(len(s))
+	return (score / float64(len(s))) * 100
 }
 
 // scoreRepeatingKeySize scores the likelihood that a given ciphertext was
