@@ -2,9 +2,24 @@ package aes
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"testing"
 )
+
+func TestEncryptECB_InvalidPlaintextSize_Error(t *testing.T) {
+	_, err := EncryptECB([]byte("012345678901234"), []byte("0123456789012345"))
+	if !errors.Is(err, ErrInputNotMultipleOfBlockSize) {
+		t.Errorf("want err: '%v', got err: '%v'", ErrInputNotMultipleOfBlockSize, err)
+	}
+}
+
+func TestDecryptECB_InvalidCiphertextSize_Error(t *testing.T) {
+	_, err := DecryptECB([]byte("012345678901234"), []byte("0123456789012345"))
+	if !errors.Is(err, ErrInputNotMultipleOfBlockSize) {
+		t.Errorf("want err: '%v', got err: '%v'", ErrInputNotMultipleOfBlockSize, err)
+	}
+}
 
 func TestEncryptThenDecryptECB(t *testing.T) {
 	tt := []struct {

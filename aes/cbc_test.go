@@ -3,16 +3,53 @@ package aes
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"testing"
 )
 
-func hexMustDecodeString(s string) []byte {
-	b, err := hex.DecodeString(s)
-	if err != nil {
-		panic(err)
+func TestEncryptCBC_InvalidPlaintextSize_Error(t *testing.T) {
+	_, err := EncryptCBC(
+		[]byte("012345678901234"),
+		[]byte("0123456789012345"),
+		[]byte("0123456789012345"),
+	)
+	if !errors.Is(err, ErrInputNotMultipleOfBlockSize) {
+		t.Errorf("want err: '%v', got err: '%v'", ErrInputNotMultipleOfBlockSize, err)
 	}
-	return b
+}
+
+func TestEncryptCBC_InvalidIVSize_Error(t *testing.T) {
+	_, err := EncryptCBC(
+		[]byte("0123456789012345"),
+		[]byte("0123456789012345"),
+		[]byte("012345678901234"),
+	)
+	if !errors.Is(err, ErrInvalidIVSize) {
+		t.Errorf("want err: '%v', got err: '%v'", ErrInvalidIVSize, err)
+	}
+}
+
+func TestDecryptCBC_InvalidCiphertextSize_Error(t *testing.T) {
+	_, err := DecryptCBC(
+		[]byte("012345678901234"),
+		[]byte("0123456789012345"),
+		[]byte("0123456789012345"),
+	)
+	if !errors.Is(err, ErrInputNotMultipleOfBlockSize) {
+		t.Errorf("want err: '%v', got err: '%v'", ErrInputNotMultipleOfBlockSize, err)
+	}
+}
+
+func TestDecryptCBC_InvalidIVSize_Error(t *testing.T) {
+	_, err := DecryptCBC(
+		[]byte("0123456789012345"),
+		[]byte("0123456789012345"),
+		[]byte("012345678901234"),
+	)
+	if !errors.Is(err, ErrInvalidIVSize) {
+		t.Errorf("want err: '%v', got err: '%v'", ErrInvalidIVSize, err)
+	}
 }
 
 func TestEncryptThenDecryptCBC(t *testing.T) {
@@ -49,4 +86,12 @@ func TestEncryptThenDecryptCBC(t *testing.T) {
 			}
 		})
 	}
+}
+
+func hexMustDecodeString(s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
