@@ -50,10 +50,10 @@ func cryptECB(input, key []byte, crypt ecbBlockCrypter) ([]byte, error) {
 	return output, nil
 }
 
-// DetectECB returns a number in the range [0, 1] indicating the
-// fraction of blocks of the ciphertext that are duplicated. A higher score
-// indicates a higher likelihood that the ciphertext was encrypted with ECB.
-// It panics if ciphertext is not a multiple of BlockSize.
+// DetectECB returns a number in the range [0, 1] indicating the fraction of
+// ciphertext blocks that are duplicated. A higher score indicates a higher
+// likelihood that the ciphertext was encrypted with ECB. It panics if
+// ciphertext is not a multiple of BlockSize.
 func DetectECB(ciphertext []byte) float64 {
 	if len(ciphertext) == 0 {
 		return 0
@@ -64,17 +64,10 @@ func DetectECB(ciphertext []byte) float64 {
 	}
 
 	n := len(ciphertext) / BlockSize
-	blocks := make(map[[BlockSize]byte]struct{}, n)
-
-	var dupes int
+	uniques := make(map[string]struct{}, n)
 	for i := 0; i+BlockSize < len(ciphertext); i += BlockSize {
-		block := [BlockSize]byte(ciphertext[i : i+BlockSize])
-		if _, ok := blocks[block]; ok {
-			dupes++
-		} else {
-			blocks[block] = struct{}{}
-		}
+		uniques[string(ciphertext[i:i+BlockSize])] = struct{}{}
 	}
 
-	return float64((dupes*2*100)/n) / float64(100)
+	return float64(n-len(uniques)) / float64(n)
 }
