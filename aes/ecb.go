@@ -3,13 +3,7 @@ package aes
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"errors"
 )
-
-// The AES block size in bytes.
-const BlockSize = aes.BlockSize
-
-var ErrInputNotMultipleOfBlockSize = errors.New("aes: input not multiple of block size")
 
 // EncryptECB encrypts a plaintext via AES in ECB mode. The key argument should
 // be the AES key, either 16, 24, or 32 bytes to select AES-128, AES-192, or

@@ -8,24 +8,6 @@ import (
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
-type Mode int
-
-func (m Mode) String() string {
-	switch m {
-	case ModeECB:
-		return "ECB"
-	case ModeCBC:
-		return "CBC"
-	default:
-		panic("aes: invalid Mode")
-	}
-}
-
-const (
-	ModeECB Mode = iota
-	ModeCBC
-)
-
 type EncryptionOracle struct {
 	Mode      Mode
 	Key       []byte
