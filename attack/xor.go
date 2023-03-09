@@ -1,18 +1,20 @@
-package xor
+package attack
 
 import (
 	"math"
 	"math/bits"
+
+	"github.com/saclark/cryptopals-go/xor"
 )
 
-// DetectRepeatingByteKey returns a single byte and a score representing the
+// DetectRepeatingByteXORKey returns a single byte and a score representing the
 // most promising (highest scoring) byte that could have been used as a
 // reapeating key in an XOR cipher with the given ciphertext.
-func DetectRepeatingByteKey(ciphertext []byte) (key byte, score float64) {
+func DetectRepeatingByteXORKey(ciphertext []byte) (key byte, score float64) {
 	plaintext := make([]byte, len(ciphertext))
 	for i := 0; i < 256; i++ {
 		k := byte(i)
-		BytesRepeatingByte(plaintext, ciphertext, k)
+		xor.BytesRepeatingByte(plaintext, ciphertext, k)
 		s := scoreEnglishLikeness(plaintext)
 		if s > score {
 			key, score = k, s
@@ -21,32 +23,32 @@ func DetectRepeatingByteKey(ciphertext []byte) (key byte, score float64) {
 	return key, score
 }
 
-// DetectRepeatingKey returns a key and a score representing the
+// DetectRepeatingXORKey returns a key and a score representing the
 // most promising (highest scoring) key that could have been used as a
 // reapeating key in an XOR cipher with the given cipher text. It will attempt
 // to detect a key no shorter than minKeySize and no longer than maxKeySize. It
 // panics if minKeySize or maxKeySize are <= 0, if maxKeySize is < minKeySize,
 // or if maxKeySize is > len(ciphertext)/2.
-func DetectRepeatingKey(ciphertext []byte, minKeySize, maxKeySize int) (key []byte, score float64) {
-	keySize := detectRepeatingKeySize(ciphertext, minKeySize, maxKeySize)
+func DetectRepeatingXORKey(ciphertext []byte, minKeySize, maxKeySize int) (key []byte, score float64) {
+	keySize := detectRepeatingXORKeySize(ciphertext, minKeySize, maxKeySize)
 	keyByteGroups := transposeBlocks(ciphertext, keySize)
 
 	key = make([]byte, len(keyByteGroups))
 	for i, group := range keyByteGroups {
-		b, _ := DetectRepeatingByteKey(group)
+		b, _ := DetectRepeatingByteXORKey(group)
 		key[i] = b
 	}
 
 	plaintext := make([]byte, len(ciphertext))
-	BytesRepeating(plaintext, ciphertext, key)
+	xor.BytesRepeating(plaintext, ciphertext, key)
 
 	return key, scoreEnglishLikeness(plaintext)
 }
 
-// detectRepeatingKeySize detects the most likely key size, in bytes, that
+// detectRepeatingXORKeySize detects the most likely key size, in bytes, that
 // could have been used to produce the ciphertext from a cipher using a
 // repeating-key XOR.
-func detectRepeatingKeySize(ciphertext []byte, minKeySize, maxKeySize int) int {
+func detectRepeatingXORKeySize(ciphertext []byte, minKeySize, maxKeySize int) int {
 	if minKeySize <= 0 {
 		panic("xor.detectRepeatingKeySize: minKeySize not > 0")
 	}
@@ -64,7 +66,7 @@ func detectRepeatingKeySize(ciphertext []byte, minKeySize, maxKeySize int) int {
 	minScore := math.MaxFloat64
 	for k := maxKeySize; k >= minKeySize; k-- {
 		n := len(ciphertext) - len(ciphertext)%k
-		score := scoreRepeatingKeySize(ciphertext[:n], k)
+		score := scoreRepeatingXORKeySize(ciphertext[:n], k)
 		if score < minScore {
 			keySize, minScore = k, score
 		}
@@ -102,10 +104,10 @@ func scoreEnglishLikeness(s []byte) float64 {
 	return (score / float64(len(s))) * 100
 }
 
-// scoreRepeatingKeySize scores the likelihood that a given ciphertext was
+// scoreRepeatingXORKeySize scores the likelihood that a given ciphertext was
 // produced by XOR-ing keySize byte blocks of the plaintext with the same
 // keySize byte key. The lower the score the more likely.
-func scoreRepeatingKeySize(ciphertext []byte, keySize int) float64 {
+func scoreRepeatingXORKeySize(ciphertext []byte, keySize int) float64 {
 	if keySize <= 0 {
 		panic("xor.scoreRepeatingKeySize: keysize not > 0")
 	}

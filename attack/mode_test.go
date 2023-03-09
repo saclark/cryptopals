@@ -1,12 +1,14 @@
-package aes
+package attack
 
 import (
+	"crypto/aes"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"testing"
 )
 
-func TestDetectECB(t *testing.T) {
+func TestDetectECBMode(t *testing.T) {
 	tt := []struct {
 		ciphertext []byte
 		want       float64
@@ -35,7 +37,7 @@ func TestDetectECB(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("%x", tc.ciphertext), func(t *testing.T) {
-			if got := DetectECB(tc.ciphertext); tc.want != roundToDecimalPlaces(got, 7) {
+			if got := DetectECBMode(tc.ciphertext, aes.BlockSize); tc.want != roundToDecimalPlaces(got, 7) {
 				t.Errorf("want: '%.7f', got: '%.7f'", tc.want, got)
 			}
 		})
@@ -48,4 +50,12 @@ func roundToDecimalPlaces(f float64, scale int) float64 {
 		s *= 10
 	}
 	return math.Round(f*s) / s
+}
+
+func hexMustDecodeString(s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }

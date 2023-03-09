@@ -1,21 +1,22 @@
-package xor
+package attack
 
 import (
 	"bytes"
 	"fmt"
-	"math"
 	"testing"
+
+	"github.com/saclark/cryptopals-go/xor"
 )
 
-func TestDetectRepeatingByteKey_CorrectlyDetectsTheKey(t *testing.T) {
+func TestDetectRepeatingByteXORKey_CorrectlyDetectsTheKey(t *testing.T) {
 	plaintext := []byte("Yo, microphone check one, two, what is this?")
 	ciphertext := make([]byte, len(plaintext))
 	wantScore := 6.8653875
 	for i := 0; i < 256; i++ {
 		b := byte(i)
-		BytesRepeatingByte(ciphertext, plaintext, b)
+		xor.BytesRepeatingByte(ciphertext, plaintext, b)
 
-		key, score := DetectRepeatingByteKey(ciphertext)
+		key, score := DetectRepeatingByteXORKey(ciphertext)
 		if b != key {
 			t.Fatalf("want: %x, got: %x", b, key)
 		}
@@ -25,7 +26,7 @@ func TestDetectRepeatingByteKey_CorrectlyDetectsTheKey(t *testing.T) {
 	}
 }
 
-func TestDetectRepeatingByteKey_CorrectlyScoresTheDetectedKey(t *testing.T) {
+func TestDetectRepeatingByteXORKey_CorrectlyScoresTheDetectedKey(t *testing.T) {
 	tt := []struct {
 		plaintext []byte
 		score     float64
@@ -40,8 +41,8 @@ func TestDetectRepeatingByteKey_CorrectlyScoresTheDetectedKey(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(string(tc.plaintext), func(t *testing.T) {
 			ciphertext := make([]byte, len(tc.plaintext))
-			BytesRepeatingByte(ciphertext, tc.plaintext, b)
-			key, score := DetectRepeatingByteKey(ciphertext)
+			xor.BytesRepeatingByte(ciphertext, tc.plaintext, b)
+			key, score := DetectRepeatingByteXORKey(ciphertext)
 			if b != key {
 				t.Errorf("want: %x, got: %x", b, key)
 			}
@@ -52,15 +53,15 @@ func TestDetectRepeatingByteKey_CorrectlyScoresTheDetectedKey(t *testing.T) {
 	}
 }
 
-func TestDetectRepeatingKey_CorrectlyDetectsTheKey(t *testing.T) {
+func TestDetectRepeatingXORKey_CorrectlyDetectsTheKey(t *testing.T) {
 	plaintext := []byte("Yo, microphone check one, two, what is this?")
 	wantKey := []byte("abc")
 	ciphertext := make([]byte, len(plaintext))
 	wantScore := 5.3456014
 
-	BytesRepeating(ciphertext, plaintext, wantKey)
+	xor.BytesRepeating(ciphertext, plaintext, wantKey)
 
-	key, score := DetectRepeatingKey(ciphertext, 1, 5)
+	key, score := DetectRepeatingXORKey(ciphertext, 1, 5)
 	if bytes.Equal(wantKey, key) {
 		t.Fatalf("want: %x, got: %x", wantKey, key)
 	}
@@ -166,7 +167,7 @@ func TestScoreEnglishLikeness(t *testing.T) {
 	}
 }
 
-func TestScoreRepeatingKeySize(t *testing.T) {
+func TestScoreRepeatingXORKeySize(t *testing.T) {
 	tt := []struct {
 		ciphertext []byte
 		keySize    int
@@ -192,7 +193,7 @@ func TestScoreRepeatingKeySize(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("%s, %d", tc.ciphertext, tc.keySize), func(t *testing.T) {
-			got := scoreRepeatingKeySize(tc.ciphertext, tc.keySize)
+			got := scoreRepeatingXORKeySize(tc.ciphertext, tc.keySize)
 			if tc.want != roundToDecimalPlaces(got, 6) {
 				t.Errorf("want: '%.6f', got: '%.6f'", tc.want, got)
 			}
@@ -268,12 +269,4 @@ func TestTransposeBlocks(t *testing.T) {
 			}
 		})
 	}
-}
-
-func roundToDecimalPlaces(f float64, scale int) float64 {
-	s := float64(1)
-	for i := 0; i < scale; i++ {
-		s *= 10
-	}
-	return math.Round(f*s) / s
 }

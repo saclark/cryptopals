@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/attack"
 	"github.com/saclark/cryptopals-go/pkcs7"
 	"github.com/saclark/cryptopals-go/xor"
 )
@@ -64,7 +65,7 @@ func TestChallenge3(t *testing.T) {
 	want := "Cooking MC's like a pound of bacon"
 
 	plaintext := make([]byte, len(input))
-	key, _ := xor.DetectRepeatingByteKey(input)
+	key, _ := attack.DetectRepeatingByteXORKey(input)
 	xor.BytesRepeatingByte(plaintext, input, key)
 
 	got := string(plaintext)
@@ -90,7 +91,7 @@ func TestChallenge4(t *testing.T) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := hexMustDecodeString(scanner.Text())
-		key, s := xor.DetectRepeatingByteKey(line)
+		key, s := attack.DetectRepeatingByteXORKey(line)
 		if s >= maxScore {
 			maxScore = s
 			plaintext = make([]byte, len(line))
@@ -136,7 +137,7 @@ func TestChallenge6(t *testing.T) {
 	}
 	b = base64MustDecodeString(string(b))
 
-	key, _ := xor.DetectRepeatingKey(b, 2, 40)
+	key, _ := attack.DetectRepeatingXORKey(b, 2, 40)
 
 	got := string(key)
 	if want != got {
@@ -186,7 +187,7 @@ func TestChallenge8(t *testing.T) {
 	for scanner.Scan() {
 		hexstr := scanner.Text()
 		line := hexMustDecodeString(hexstr)
-		s := aes.DetectECB(line)
+		s := attack.DetectECBMode(line, aes.BlockSize)
 		if s > maxScore {
 			got = hexstr
 			maxScore = s
@@ -243,9 +244,9 @@ func TestChallenge10(t *testing.T) {
 // An ECB/CBC detection oracle
 // See: https://www.cryptopals.com/sets/2/challenges/11
 func TestChallenge11(t *testing.T) {
-	oracle := aes.NewOracle(aes.NewRandomOracleState)
+	oracle := attack.NewAESOracle(attack.NewRandomAESOracleState)
 
-	got, err := aes.DetectMode(aes.BlockSize, oracle.Encrypt)
+	got, err := attack.DetectMode(aes.BlockSize, oracle.Encrypt)
 	if err != nil {
 		t.Fatalf("detecting mode: %v", err)
 	}
@@ -260,15 +261,15 @@ func TestChallenge11(t *testing.T) {
 // See: https://www.cryptopals.com/sets/2/challenges/12
 func TestChallenge12(t *testing.T) {
 	want := base64MustDecodeString("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK")
-	state, err := aes.NewPrependableECBOracleState(want)
+	state, err := attack.NewPrependableECBAESOracleState(want)
 	if err != nil {
 		t.Fatalf("creating new state func: %v", err)
 	}
-	oracle := aes.NewOracle(func() (aes.OracleState, error) {
+	oracle := attack.NewAESOracle(func() (attack.AESOracleState, error) {
 		return state, nil
 	})
 
-	got, err := aes.AttackECBEncryptionOracle(128, oracle.Encrypt)
+	got, err := attack.CrackECB(aes.BlockSize, oracle.Encrypt)
 	if err != nil {
 		t.Fatalf("decrypting unknown plaintext: %v", err)
 	}
