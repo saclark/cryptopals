@@ -50,6 +50,22 @@ func (o *Oracle) Encrypt(plaintext []byte) ([]byte, error) {
 	return EncryptCBC(input, o.State.Key, o.State.IV)
 }
 
+func NewPrependableECBOracleState(internalPlaintext []byte) (OracleState, error) {
+	key, err := randomBlock(BlockSize)
+	if err != nil {
+		return OracleState{}, fmt.Errorf("generating random key: %w", err)
+	}
+	state := OracleState{
+		Mode: ModeECB,
+		Key:  key,
+		PreProcessPlaintext: func(plaintext []byte) ([]byte, error) {
+			plaintext = append(plaintext, internalPlaintext...)
+			return pkcs7.Pad(plaintext, BlockSize), nil
+		},
+	}
+	return state, nil
+}
+
 func NewRandomOracleState() (OracleState, error) {
 	var err error
 	state := OracleState{

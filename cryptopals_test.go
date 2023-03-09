@@ -21,6 +21,14 @@ func hexMustDecodeString(s string) []byte {
 	return b
 }
 
+func base64MustDecodeString(s string) []byte {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 func base64MustDecodeBytes(s []byte) []byte {
 	b := make([]byte, base64.StdEncoding.DecodedLen(len(s)))
 	n, err := base64.StdEncoding.Decode(b, s)
@@ -246,7 +254,7 @@ func TestChallenge10(t *testing.T) {
 func TestChallenge11(t *testing.T) {
 	oracle := aes.NewOracle(aes.NewRandomOracleState)
 
-	got, err := aes.DetectMode(oracle.Encrypt)
+	got, err := aes.DetectMode(aes.BlockSize, oracle.Encrypt)
 	if err != nil {
 		t.Fatalf("detecting mode: %v", err)
 	}
@@ -254,5 +262,27 @@ func TestChallenge11(t *testing.T) {
 	want := oracle.State.Mode
 	if want != got {
 		t.Errorf("want: '%v', got: '%v'", want, got)
+	}
+}
+
+// Byte-at-a-time ECB decryption (Simple)
+// See: https://www.cryptopals.com/sets/2/challenges/12
+func TestChallenge12(t *testing.T) {
+	want := base64MustDecodeString("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK")
+	state, err := aes.NewPrependableECBOracleState(want)
+	if err != nil {
+		t.Fatalf("creating new state func: %v", err)
+	}
+	oracle := aes.NewOracle(func() (aes.OracleState, error) {
+		return state, nil
+	})
+
+	got, err := aes.AttackECBEncryptionOracle(128, oracle.Encrypt)
+	if err != nil {
+		t.Fatalf("decrypting unknown plaintext: %v", err)
+	}
+
+	if !bytes.Equal(want, got) {
+		t.Errorf("want: '%x', got: '%x'", want, got)
 	}
 }
