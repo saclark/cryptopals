@@ -20,7 +20,7 @@ const (
 	ModeCBC
 )
 
-func DetectMode(blockSize int, encrypt OracleEncryptFunc) (Mode, error) {
+func DetectMode(blockSize int, encrypt EncryptionOracle) (Mode, error) {
 	ecbProbePlaintext := make([]byte, blockSize*blockSize)
 	ciphertext, err := encrypt(ecbProbePlaintext)
 	if err != nil {

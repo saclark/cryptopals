@@ -7,7 +7,7 @@ import (
 
 var ErrUnableToDetectBlockSize = errors.New("attack: unable to detect block size")
 
-func DetectBlockSize(maxBlockSize int, encrypt OracleEncryptFunc) (int, error) {
+func DetectBlockSize(maxBlockSize int, encrypt EncryptionOracle) (int, error) {
 	max := maxBlockSize + 32
 	var prevLen int
 	for i := 32; i <= max; i++ {

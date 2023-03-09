@@ -1,3 +1,3 @@
 package attack
 
-type OracleEncryptFunc func(chosenPlaintext []byte) (ciphertext []byte, err error)
+type EncryptionOracle func(chosenPlaintext []byte) (ciphertext []byte, err error)

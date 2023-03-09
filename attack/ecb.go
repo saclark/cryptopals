@@ -15,7 +15,7 @@ func (e AttackFailedError) Error() string {
 // CrackECB attempts to decrypt the unknown, internal data
 // being handled by an AES encryption oracle that uses ECB mode with a static
 // key and allows arbitrary input to be prepended the targeted internal data.
-func CrackECB(maxBlockSize int, encrypt OracleEncryptFunc) ([]byte, error) {
+func CrackECB(maxBlockSize int, encrypt EncryptionOracle) ([]byte, error) {
 	k, err := DetectBlockSize(maxBlockSize, encrypt)
 	if err != nil {
 		return nil, fmt.Errorf("detecting block size: %w", err)
