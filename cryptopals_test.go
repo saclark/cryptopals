@@ -29,15 +29,6 @@ func base64MustDecodeString(s string) []byte {
 	return b
 }
 
-func base64MustDecodeBytes(s []byte) []byte {
-	b := make([]byte, base64.StdEncoding.DecodedLen(len(s)))
-	n, err := base64.StdEncoding.Decode(b, s)
-	if err != nil {
-		panic(err)
-	}
-	return b[:n]
-}
-
 // Convert hex to base64
 // See: https://www.cryptopals.com/sets/1/challenges/1
 func TestChallenge1(t *testing.T) {
@@ -143,7 +134,7 @@ func TestChallenge6(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b = base64MustDecodeBytes(b)
+	b = base64MustDecodeString(string(b))
 
 	key, _ := xor.DetectRepeatingKey(b, 2, 40)
 
@@ -164,7 +155,7 @@ func TestChallenge7(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ciphertext = base64MustDecodeBytes(ciphertext)
+	ciphertext = base64MustDecodeString(string(ciphertext))
 
 	plaintext, err := aes.DecryptECB(ciphertext, key)
 	if err != nil {
@@ -236,7 +227,7 @@ func TestChallenge10(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ciphertext = base64MustDecodeBytes(ciphertext)
+	ciphertext = base64MustDecodeString(string(ciphertext))
 
 	plaintext, err := aes.DecryptCBC(ciphertext, key, iv)
 	if err != nil {
