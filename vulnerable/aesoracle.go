@@ -1,4 +1,4 @@
-package attack
+package vulnerable
 
 import (
 	"crypto/rand"
@@ -6,11 +6,12 @@ import (
 	"math/big"
 
 	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/attack"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
 type AESOracleState struct {
-	Mode                      Mode
+	Mode                      attack.Mode
 	Key                       []byte
 	IV                        []byte
 	PreProcessChosenPlaintext func(chosenPlaintext []byte) (newChosenPlaintext []byte, err error)
@@ -40,7 +41,7 @@ func (o *AESOracle) Encrypt(chosenPlaintext []byte) ([]byte, error) {
 		}
 	}
 
-	if o.State.Mode == ModeECB {
+	if o.State.Mode == attack.ModeECB {
 		return aes.EncryptECB(cp, o.State.Key)
 	}
 
@@ -53,7 +54,7 @@ func NewPrependableECBAESOracleState(hiddenPlaintext []byte) (AESOracleState, er
 		return AESOracleState{}, fmt.Errorf("generating random key: %w", err)
 	}
 	state := AESOracleState{
-		Mode: ModeECB,
+		Mode: attack.ModeECB,
 		Key:  key,
 		PreProcessChosenPlaintext: func(chosenPlaintext []byte) ([]byte, error) {
 			chosenPlaintext = append(chosenPlaintext, hiddenPlaintext...)
@@ -74,7 +75,7 @@ func NewRandomAESOracleState() (AESOracleState, error) {
 	if state.Mode, err = randomMode(); err != nil {
 		return AESOracleState{}, fmt.Errorf("choosing random mode: %w", err)
 	}
-	if state.Mode == ModeCBC {
+	if state.Mode == attack.ModeCBC {
 		if state.IV, err = randomBlock(); err != nil {
 			return AESOracleState{}, fmt.Errorf("generating random IV: %v", err)
 		}
@@ -90,15 +91,15 @@ func randomBlock() ([]byte, error) {
 	return block, nil
 }
 
-func randomMode() (Mode, error) {
+func randomMode() (attack.Mode, error) {
 	n, err := rand.Int(rand.Reader, big.NewInt(2))
 	if err != nil {
 		return 0, fmt.Errorf("generating random int in range [0, 2): %v", err)
 	}
 	if n.Int64() == 0 {
-		return ModeECB, nil
+		return attack.ModeECB, nil
 	}
-	return ModeCBC, nil
+	return attack.ModeCBC, nil
 }
 
 func junkifyAndPad(chosenPlaintext []byte) ([]byte, error) {
