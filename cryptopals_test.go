@@ -244,17 +244,14 @@ func TestChallenge10(t *testing.T) {
 // An ECB/CBC detection oracle
 // See: https://www.cryptopals.com/sets/2/challenges/11
 func TestChallenge11(t *testing.T) {
-	oracle, err := aes.NewEncryptionOracle()
-	if err != nil {
-		t.Fatalf("creating encryption oracle: %v", err)
-	}
+	oracle := aes.NewOracle(aes.NewRandomOracleState)
 
 	got, err := aes.DetectMode(oracle.Encrypt)
 	if err != nil {
 		t.Fatalf("detecting mode: %v", err)
 	}
 
-	want := oracle.Mode
+	want := oracle.State.Mode
 	if want != got {
 		t.Errorf("want: '%v', got: '%v'", want, got)
 	}

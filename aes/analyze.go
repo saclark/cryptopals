@@ -1,75 +1,8 @@
 package aes
 
 import (
-	"crypto/rand"
 	"fmt"
-	"math/big"
-
-	"github.com/saclark/cryptopals-go/pkcs7"
 )
-
-type EncryptionOracle struct {
-	Mode      Mode
-	Key       []byte
-	IV        []byte
-	JunkByteN int // number of junk bytes to prepend and append to plaintext
-}
-
-func NewEncryptionOracle() (*EncryptionOracle, error) {
-	oracle := &EncryptionOracle{}
-
-	// Generate a random key.
-	oracle.Key = make([]byte, BlockSize)
-	if _, err := rand.Read(oracle.Key); err != nil {
-		return nil, fmt.Errorf("generating random key: %v", err)
-	}
-
-	// Choose count of random junk bytes to prepend and append.
-	n, err := rand.Int(rand.Reader, big.NewInt(6))
-	if err != nil {
-		return nil, fmt.Errorf("choosing random pading value: %v", err)
-	}
-	oracle.JunkByteN = int(n.Int64() + 5)
-
-	// Choose mode.
-	n, err = rand.Int(rand.Reader, big.NewInt(2))
-	if err != nil {
-		return nil, fmt.Errorf("choosing random encryption mode: %v", err)
-	}
-
-	if n.Int64() == 0 {
-		oracle.Mode = ModeECB
-		return oracle, nil
-	}
-
-	// Generate a random IV.
-	oracle.IV = make([]byte, BlockSize)
-	if _, err := rand.Read(oracle.IV); err != nil {
-		return nil, fmt.Errorf("generating random IV: %v", err)
-	}
-
-	oracle.Mode = ModeCBC
-	return oracle, nil
-}
-
-func (o *EncryptionOracle) Encrypt(plaintext []byte) ([]byte, error) {
-	pt := o.wrapWithJunk(plaintext)
-	pt = pkcs7.Pad(pt, BlockSize)
-	if o.Mode == ModeECB {
-		return EncryptECB(pt, o.Key)
-	}
-	return EncryptCBC(pt, o.Key, o.IV)
-}
-
-func (o *EncryptionOracle) wrapWithJunk(plaintext []byte) []byte {
-	b := byte(o.JunkByteN)
-	wrapped := make([]byte, len(plaintext)+o.JunkByteN*2)
-	for i := 0; i < o.JunkByteN; i++ {
-		wrapped[i], wrapped[len(wrapped)-1-i] = b, b
-	}
-	copy(wrapped[o.JunkByteN:len(wrapped)-o.JunkByteN], plaintext)
-	return wrapped
-}
 
 var ecbProbePlaintext = make([]byte, BlockSize*BlockSize)
 
