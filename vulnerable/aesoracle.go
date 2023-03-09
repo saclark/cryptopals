@@ -14,7 +14,7 @@ type AESOracleState struct {
 	Mode                      attack.Mode
 	Key                       []byte
 	IV                        []byte
-	PreProcessChosenPlaintext func(chosenPlaintext []byte) (newChosenPlaintext []byte, err error)
+	PreProcessChosenPlaintext func(chosenPlaintext []byte) (plaintext []byte, err error)
 }
 
 type AESOracle struct {
@@ -32,23 +32,23 @@ func (o *AESOracle) Encrypt(chosenPlaintext []byte) ([]byte, error) {
 		return nil, fmt.Errorf("generating new state: %w", err)
 	}
 
-	cp := make([]byte, len(chosenPlaintext))
-	copy(cp, chosenPlaintext)
+	plaintext := make([]byte, len(chosenPlaintext))
+	copy(plaintext, chosenPlaintext)
 
 	if o.State.PreProcessChosenPlaintext != nil {
-		if cp, err = o.State.PreProcessChosenPlaintext(cp); err != nil {
+		if plaintext, err = o.State.PreProcessChosenPlaintext(plaintext); err != nil {
 			return nil, fmt.Errorf("pre-processing plaintext: %w", err)
 		}
 	}
 
 	if o.State.Mode == attack.ModeECB {
-		return aes.EncryptECB(cp, o.State.Key)
+		return aes.EncryptECB(plaintext, o.State.Key)
 	}
 
-	return aes.EncryptCBC(cp, o.State.Key, o.State.IV)
+	return aes.EncryptCBC(plaintext, o.State.Key, o.State.IV)
 }
 
-func NewPrependableECBAESOracleState(hiddenPlaintext []byte) (AESOracleState, error) {
+func NewPrependableECBAESOracleState(targetPlaintext []byte) (AESOracleState, error) {
 	key, err := randomBlock()
 	if err != nil {
 		return AESOracleState{}, fmt.Errorf("generating random key: %w", err)
@@ -57,7 +57,7 @@ func NewPrependableECBAESOracleState(hiddenPlaintext []byte) (AESOracleState, er
 		Mode: attack.ModeECB,
 		Key:  key,
 		PreProcessChosenPlaintext: func(chosenPlaintext []byte) ([]byte, error) {
-			chosenPlaintext = append(chosenPlaintext, hiddenPlaintext...)
+			chosenPlaintext = append(chosenPlaintext, targetPlaintext...)
 			return pkcs7.Pad(chosenPlaintext, aes.BlockSize), nil
 		},
 	}

@@ -58,27 +58,27 @@ func CrackECB(maxBlockSize int, encrypt EncryptionOracle) ([]byte, error) {
 		}
 	}
 
-	plaintext := []byte{}
+	decrypted := []byte{}
 	var i int
 	for {
 		// Avoid decrypting previously decrypted blocks.
 		if i%k == 0 {
 			if j, ok := refs[i]; ok {
-				plaintext = append(plaintext, plaintext[j:j+k]...)
+				decrypted = append(decrypted, decrypted[j:j+k]...)
 				i += k
 				continue
 			}
 		}
 
 		if i < k {
-			copy(inputBuf[k-1-i:], plaintext)
+			copy(inputBuf[k-1-i:], decrypted)
 		} else {
-			copy(inputBuf, plaintext[(i-k)+1:])
+			copy(inputBuf, decrypted[(i-k)+1:])
 		}
 
 		// Note: A possible optimization would be to test bytes in order of some
 		// statistical likelihood.
-		var decrypted bool
+		var found bool
 		for j := 0; j < 256; j++ {
 			b := byte(j)
 			inputBuf[k-1] = b
@@ -88,22 +88,22 @@ func CrackECB(maxBlockSize int, encrypt EncryptionOracle) ([]byte, error) {
 				return nil, fmt.Errorf("querying encryption oracle with \"%x\": %w", inputBuf, err)
 			}
 
-			if decrypted = bytes.Equal(targetBlocks[i], output[:k]); decrypted {
-				plaintext = append(plaintext, b)
+			if found = bytes.Equal(targetBlocks[i], output[:k]); found {
+				decrypted = append(decrypted, b)
 				break
 			}
 		}
 
-		if decrypted {
+		if found {
 			i++
 			continue
 		}
 
-		if k >= len(ciphertext)-len(plaintext) && plaintext[len(plaintext)-1] == 0x01 {
-			return plaintext[:len(plaintext)-1], nil
+		if k >= len(ciphertext)-len(decrypted) && decrypted[len(decrypted)-1] == 0x01 {
+			return decrypted[:len(decrypted)-1], nil
 		}
 
-		return plaintext, AttackFailedError("unable to decrypt byte at index " + strconv.Itoa(i))
+		return decrypted, AttackFailedError("unable to decrypt byte at index " + strconv.Itoa(i))
 	}
 }
 
