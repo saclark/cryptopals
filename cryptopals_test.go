@@ -10,8 +10,8 @@ import (
 
 	"github.com/saclark/cryptopals-go/aes"
 	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals-go/oracle"
 	"github.com/saclark/cryptopals-go/pkcs7"
-	"github.com/saclark/cryptopals-go/vulnerable"
 	"github.com/saclark/cryptopals-go/xor"
 )
 
@@ -245,19 +245,21 @@ func TestChallenge10(t *testing.T) {
 // An ECB/CBC detection oracle
 // See: https://www.cryptopals.com/sets/2/challenges/11
 func TestChallenge11(t *testing.T) {
-	oracle := vulnerable.NewAESOracle(vulnerable.NewRandomAESOracleState)
+	encrypt, want, err := oracle.NewModeDetectionOracle()
+	if err != nil {
+		t.Fatalf("creating oracle: %v", err)
+	}
 
-	isECB, err := attack.IsECBMode(aes.BlockSize, oracle.Encrypt)
+	isECB, err := attack.IsECBMode(aes.BlockSize, encrypt)
 	if err != nil {
 		t.Fatalf("detecting mode: %v", err)
 	}
 
-	got := vulnerable.ModeECB
+	got := oracle.ModeECB
 	if !isECB {
-		got = vulnerable.ModeCBC
+		got = oracle.ModeCBC
 	}
 
-	want := oracle.State.Mode
 	if want != got {
 		t.Errorf("want: '%v', got: '%v'", want, got)
 	}
@@ -267,15 +269,12 @@ func TestChallenge11(t *testing.T) {
 // See: https://www.cryptopals.com/sets/2/challenges/12
 func TestChallenge12(t *testing.T) {
 	want := base64MustDecodeString("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK")
-	state, err := vulnerable.NewPrependableECBAESOracleState(want)
+	encrypt, err := oracle.NewECBByteAtATimeOracle(want)
 	if err != nil {
-		t.Fatalf("creating new state func: %v", err)
+		t.Fatalf("creating oracle: %v", err)
 	}
-	oracle := vulnerable.NewAESOracle(func() (vulnerable.AESOracleState, error) {
-		return state, nil
-	})
 
-	got, err := attack.CrackECB(aes.BlockSize, oracle.Encrypt)
+	got, err := attack.CrackECB(aes.BlockSize, encrypt)
 	if err != nil {
 		t.Fatalf("decrypting unknown plaintext: %v", err)
 	}
