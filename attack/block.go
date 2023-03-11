@@ -8,9 +8,11 @@ import (
 var ErrUnableToDetectBlockSize = errors.New("attack: unable to detect block size")
 
 func DetectBlockSize(maxBlockSize int, encrypt EncryptionOracle) (int, error) {
-	max := maxBlockSize + 32
+	// Most block sizes are a power of 2, so we'll start at 128, which should
+	// reveal the block size in only two queries to the oracle if the block
+	// size is any power of 2 <= 128.
 	var prevLen int
-	for i := 32; i <= max; i++ {
+	for i := 128; i <= 128+maxBlockSize; i++ {
 		plaintext := make([]byte, i)
 		ciphertext, err := encrypt(plaintext)
 		if err != nil {
