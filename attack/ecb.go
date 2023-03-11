@@ -126,11 +126,10 @@ func CrackECB(maxBlockSize int, encrypt EncryptionOracle) ([]byte, error) {
 // This is done using k queries to encrypt, illustrated below in terms of the
 // underlying plaintext.
 //
-//	                      ---- ---- ----
-//		encrypt("xxx") => xxxA BCDE F333*
-//		encrypt("xx")  => xxAB CDEF 4444*
-//		encrypt("x")   => xABC DEF1*
-//		encrypt("")    => ABCD EF22*
+//	encrypt("xxx") => xxxA BCDE F333*
+//	encrypt("xx")  => xxAB CDEF 4444*
+//	encrypt("x")   => xABC DEF1*
+//	encrypt("")    => ABCD EF22*
 //
 // Where the last k blocks, marked with "*", are discarded.
 func generateTargetBlocks(initialBlock, ciphertext []byte, encrypt EncryptionOracle) ([][]byte, error) {
