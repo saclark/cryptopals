@@ -6,12 +6,29 @@ import (
 	"math/big"
 
 	"github.com/saclark/cryptopals-go/aes"
-	"github.com/saclark/cryptopals-go/attack"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
+type Mode int
+
+func (m Mode) String() string {
+	switch m {
+	case ModeECB:
+		return "ECB"
+	case ModeCBC:
+		return "CBC"
+	default:
+		panic("aes: invalid Mode")
+	}
+}
+
+const (
+	ModeECB Mode = iota
+	ModeCBC
+)
+
 type AESOracleState struct {
-	Mode                      attack.Mode
+	Mode                      Mode
 	Key                       []byte
 	IV                        []byte
 	PreProcessChosenPlaintext func(chosenPlaintext []byte) (plaintext []byte, err error)
@@ -41,7 +58,7 @@ func (o *AESOracle) Encrypt(chosenPlaintext []byte) ([]byte, error) {
 		}
 	}
 
-	if o.State.Mode == attack.ModeECB {
+	if o.State.Mode == ModeECB {
 		return aes.EncryptECB(plaintext, o.State.Key)
 	}
 
@@ -54,7 +71,7 @@ func NewPrependableECBAESOracleState(targetPlaintext []byte) (AESOracleState, er
 		return AESOracleState{}, fmt.Errorf("generating random key: %w", err)
 	}
 	state := AESOracleState{
-		Mode: attack.ModeECB,
+		Mode: ModeECB,
 		Key:  key,
 		PreProcessChosenPlaintext: func(chosenPlaintext []byte) ([]byte, error) {
 			chosenPlaintext = append(chosenPlaintext, targetPlaintext...)
@@ -75,7 +92,7 @@ func NewRandomAESOracleState() (AESOracleState, error) {
 	if state.Mode, err = randomMode(); err != nil {
 		return AESOracleState{}, fmt.Errorf("choosing random mode: %w", err)
 	}
-	if state.Mode == attack.ModeCBC {
+	if state.Mode == ModeCBC {
 		if state.IV, err = randomBlock(); err != nil {
 			return AESOracleState{}, fmt.Errorf("generating random IV: %v", err)
 		}
@@ -91,15 +108,15 @@ func randomBlock() ([]byte, error) {
 	return block, nil
 }
 
-func randomMode() (attack.Mode, error) {
+func randomMode() (Mode, error) {
 	n, err := rand.Int(rand.Reader, big.NewInt(2))
 	if err != nil {
 		return 0, fmt.Errorf("generating random int in range [0, 2): %v", err)
 	}
 	if n.Int64() == 0 {
-		return attack.ModeECB, nil
+		return ModeECB, nil
 	}
-	return attack.ModeCBC, nil
+	return ModeCBC, nil
 }
 
 func junkifyAndPad(chosenPlaintext []byte) ([]byte, error) {

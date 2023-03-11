@@ -21,12 +21,11 @@ func CrackECB(maxBlockSize int, encrypt EncryptionOracle) ([]byte, error) {
 		return nil, fmt.Errorf("detecting block size: %w", err)
 	}
 
-	mode, err := DetectMode(k, encrypt)
+	ecbMode, err := IsECBMode(k, encrypt)
 	if err != nil {
-		return nil, fmt.Errorf("detecting mode: %w", err)
+		return nil, fmt.Errorf("detecting ECB mode: %w", err)
 	}
-
-	if mode != ModeECB {
+	if !ecbMode {
 		return nil, AttackFailedError("not ECB mode")
 	}
 
@@ -123,4 +122,37 @@ func relateDuplicateBlocks(ciphertext []byte, blockSize int) (map[int]int, error
 		}
 	}
 	return refs, nil
+}
+
+// IsECBMode detects whether an encryption oracle is using ECB mode.
+func IsECBMode(blockSize int, encrypt EncryptionOracle) (bool, error) {
+	ecbProbe := make([]byte, blockSize*blockSize)
+	ciphertext, err := encrypt(ecbProbe)
+	if err != nil {
+		return false, fmt.Errorf("calling encrypt: %v", err)
+	}
+	score := DetectECBMode(ciphertext[:len(ecbProbe)], blockSize)
+	return score >= 0.1, nil
+}
+
+// DetectECBMode returns a number in the range [0, 1] indicating the fraction of
+// ciphertext blocks that are duplicated. A higher score indicates a higher
+// likelihood that the ciphertext was encrypted with ECB. It panics if
+// ciphertext is not a multiple of BlockSize.
+func DetectECBMode(ciphertext []byte, blockSize int) float64 {
+	if len(ciphertext) == 0 {
+		return 0
+	}
+
+	if len(ciphertext)%blockSize != 0 {
+		panic("aes.DetectECB: ciphertext size not a multiple of block size")
+	}
+
+	n := len(ciphertext) / blockSize
+	uniques := make(map[string]struct{}, n)
+	for i := 0; i+blockSize < len(ciphertext); i += blockSize {
+		uniques[string(ciphertext[i:i+blockSize])] = struct{}{}
+	}
+
+	return float64(n-len(uniques)) / float64(n)
 }

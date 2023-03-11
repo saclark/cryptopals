@@ -247,9 +247,14 @@ func TestChallenge10(t *testing.T) {
 func TestChallenge11(t *testing.T) {
 	oracle := vulnerable.NewAESOracle(vulnerable.NewRandomAESOracleState)
 
-	got, err := attack.DetectMode(aes.BlockSize, oracle.Encrypt)
+	isECB, err := attack.IsECBMode(aes.BlockSize, oracle.Encrypt)
 	if err != nil {
 		t.Fatalf("detecting mode: %v", err)
+	}
+
+	got := vulnerable.ModeECB
+	if !isECB {
+		got = vulnerable.ModeCBC
 	}
 
 	want := oracle.State.Mode
