@@ -18,7 +18,7 @@ func TestChallenge12(t *testing.T) {
 		t.Fatalf("creating oracle: %v", err)
 	}
 
-	got, err := exploit.CrackECB(aes.BlockSize, encrypt)
+	got, err := exploit.CrackECBByteAtATimeOracle(aes.BlockSize, encrypt)
 	if err != nil {
 		t.Fatalf("decrypting unknown plaintext: %v", err)
 	}

@@ -16,7 +16,7 @@ func TestChallenge11(t *testing.T) {
 		t.Fatalf("creating oracle: %v", err)
 	}
 
-	isECB, err := exploit.IsECBMode(aes.BlockSize, encrypt)
+	isECB, err := exploit.IsOracleECBMode(aes.BlockSize, encrypt)
 	if err != nil {
 		t.Fatalf("detecting mode: %v", err)
 	}
