@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals-go/exploit"
 )
 
 // Break repeating-key XOR
@@ -19,7 +19,7 @@ func TestChallenge6(t *testing.T) {
 	}
 	b = base64MustDecodeString(string(b))
 
-	key, _ := attack.DetectRepeatingXORKey(b, 2, 40)
+	key, _ := exploit.DetectRepeatingXORKey(b, 2, 40)
 
 	got := string(key)
 	if want != got {

@@ -3,7 +3,7 @@ package cryptopals
 import (
 	"testing"
 
-	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals-go/exploit"
 	"github.com/saclark/cryptopals-go/xor"
 )
 
@@ -14,7 +14,7 @@ func TestChallenge3(t *testing.T) {
 	want := "Cooking MC's like a pound of bacon"
 
 	plaintext := make([]byte, len(input))
-	key, _ := attack.DetectRepeatingByteXORKey(input)
+	key, _ := exploit.DetectRepeatingByteXORKey(input)
 	xor.BytesRepeatingByte(plaintext, input, key)
 
 	got := string(plaintext)

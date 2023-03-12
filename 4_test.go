@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals-go/exploit"
 	"github.com/saclark/cryptopals-go/xor"
 )
 
@@ -26,7 +26,7 @@ func TestChallenge4(t *testing.T) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := hexMustDecodeString(scanner.Text())
-		key, s := attack.DetectRepeatingByteXORKey(line)
+		key, s := exploit.DetectRepeatingByteXORKey(line)
 		if s >= maxScore {
 			maxScore = s
 			plaintext = make([]byte, len(line))

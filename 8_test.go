@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/saclark/cryptopals-go/aes"
-	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals-go/exploit"
 )
 
 // Detect AES in ECB mode
@@ -27,7 +27,7 @@ func TestChallenge8(t *testing.T) {
 	for scanner.Scan() {
 		hexstr := scanner.Text()
 		line := hexMustDecodeString(hexstr)
-		s := attack.DetectECBMode(line, aes.BlockSize)
+		s := exploit.DetectECBMode(line, aes.BlockSize)
 		if s > maxScore {
 			got = hexstr
 			maxScore = s
