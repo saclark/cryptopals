@@ -19,13 +19,13 @@
 package set1
 
 import (
-	"github.com/saclark/cryptopals-go/exploit"
+	"github.com/saclark/cryptopals-go/attack"
 	"github.com/saclark/cryptopals-go/xor"
 )
 
 func CrackSingleByteXOR(bytes []byte) []byte {
 	plaintext := make([]byte, len(bytes))
-	key, _ := exploit.DetectRepeatingByteXORKey(bytes)
+	key, _ := attack.DetectRepeatingByteXORKey(bytes)
 	xor.BytesRepeatingByte(plaintext, bytes, key)
 	return plaintext
 }

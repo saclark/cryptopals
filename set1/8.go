@@ -19,7 +19,7 @@ import (
 	"os"
 
 	"github.com/saclark/cryptopals-go/aes"
-	"github.com/saclark/cryptopals-go/exploit"
+	"github.com/saclark/cryptopals-go/attack"
 )
 
 func FindAESECBEncryptedLine(filepath string) (string, error) {
@@ -38,7 +38,7 @@ func FindAESECBEncryptedLine(filepath string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("hex decoding line '%s': %v", line, err)
 		}
-		s := exploit.DetectECBMode(b, aes.BlockSize)
+		s := attack.DetectECBMode(b, aes.BlockSize)
 		if s > maxScore {
 			encryptedLine = line
 			maxScore = s

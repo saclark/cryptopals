@@ -1,4 +1,4 @@
-package exploit
+package attack
 
 import (
 	"errors"

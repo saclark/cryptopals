@@ -20,12 +20,12 @@ import (
 	"fmt"
 
 	"github.com/saclark/cryptopals-go/aes"
-	"github.com/saclark/cryptopals-go/exploit"
+	"github.com/saclark/cryptopals-go/attack"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
 func CrackInputSandwichingECBOracle(maxBlockSize int, oracle func([]byte) ([]byte, error)) ([]byte, error) {
-	return exploit.CrackECBOracleByteAtATime(maxBlockSize, oracle)
+	return attack.CrackECBOracleByteAtATime(maxBlockSize, oracle)
 }
 
 // NewInputSandwichingECBOracle creates an encryption oracle that will prepend

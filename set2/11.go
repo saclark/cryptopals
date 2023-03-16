@@ -31,12 +31,12 @@ import (
 	"math/big"
 
 	"github.com/saclark/cryptopals-go/aes"
-	"github.com/saclark/cryptopals-go/exploit"
+	"github.com/saclark/cryptopals-go/attack"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
 func DetectECBModeOracle(oracle func([]byte) ([]byte, error)) (isECB bool, err error) {
-	return exploit.IsOracleECBMode(aes.BlockSize, oracle)
+	return attack.IsOracleECBMode(aes.BlockSize, oracle)
 }
 
 // ModeDetectionOracle implements an encryption oracle that will add 5-10 bytes

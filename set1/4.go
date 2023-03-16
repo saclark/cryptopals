@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/saclark/cryptopals-go/exploit"
+	"github.com/saclark/cryptopals-go/attack"
 	"github.com/saclark/cryptopals-go/xor"
 )
 
@@ -35,7 +35,7 @@ func DetectAndCrackSingleByteXOREncryptedLine(filepath string) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("hex decoding line '%s': %v", hexStr, err)
 		}
-		key, s := exploit.DetectRepeatingByteXORKey(line)
+		key, s := attack.DetectRepeatingByteXORKey(line)
 		if s >= maxScore {
 			maxScore = s
 			plaintext = make([]byte, len(line))
