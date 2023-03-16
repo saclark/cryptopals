@@ -75,19 +75,21 @@ func (o *ModeDetectionOracle) Encrypt(input []byte) (ciphertext []byte, err erro
 }
 
 func junkifyAndPad(input []byte) ([]byte, error) {
-	randInt, err := rand.Int(rand.Reader, big.NewInt(6))
+	n, err := randomInt(6)
 	if err != nil {
 		return nil, fmt.Errorf("generating random int in range [0,6): %v", err)
 	}
-
-	n := int(randInt.Int64() + 5)
-	b := byte(n)
+	n = n + 5
 
 	junkified := make([]byte, len(input)+n*2)
+	if _, err := rand.Read(junkified[:n]); err != nil {
+		return nil, fmt.Errorf("reading %d random bytes: %v", n, err)
+	}
+
 	copy(junkified[n:len(junkified)-n], input)
 
-	for i := 0; i < n; i++ {
-		junkified[i], junkified[len(junkified)-1-i] = b, b
+	if _, err := rand.Read(junkified[len(junkified)-n:]); err != nil {
+		return nil, fmt.Errorf("reading %d random bytes: %v", n, err)
 	}
 
 	return pkcs7.Pad(junkified, aes.BlockSize), nil
