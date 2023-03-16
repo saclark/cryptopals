@@ -2,6 +2,7 @@ package pkcs7
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"testing"
 )
@@ -32,12 +33,12 @@ func TestPadThenUnpad(t *testing.T) {
 		t.Run(fmt.Sprintf("%v,%d", tc.unpadded, tc.blockSize), func(t *testing.T) {
 			got := Pad(tc.unpadded, tc.blockSize)
 			if !bytes.Equal(tc.padded, got) {
-				t.Errorf("want padded bytes: '%v', got padded bytes: '%v'", tc.padded, got)
+				t.Errorf("want padded bytes: '%x', got padded bytes: '%x'", tc.padded, got)
 			}
-			if got, ok := Unpad(got, tc.blockSize); !ok {
-				t.Errorf("want: Unpad ok: %v, got: Unpad ok: %v", true, ok)
+			if got, err := Unpad(got, tc.blockSize); err != nil {
+				t.Errorf("want Unpad err: 'nil', got Unpad err: '%v'", err)
 			} else if !bytes.Equal(tc.unpadded, got) {
-				t.Errorf("want unpadded bytes: '%v', got unpadded bytes: '%v'", tc.unpadded, got)
+				t.Errorf("want unpadded bytes: '%x', got unpadded bytes: '%x'", tc.unpadded, got)
 			}
 		})
 	}
@@ -47,7 +48,7 @@ func TestPad(t *testing.T) {
 	for _, tc := range validPaddingTestTable {
 		t.Run(fmt.Sprintf("%v,%d", tc.unpadded, tc.blockSize), func(t *testing.T) {
 			if got := Pad(tc.unpadded, tc.blockSize); !bytes.Equal(tc.padded, got) {
-				t.Errorf("want: '%v', got: '%v'", tc.padded, got)
+				t.Errorf("want: '%x', got: '%x'", tc.padded, got)
 			}
 		})
 	}
@@ -56,10 +57,10 @@ func TestPad(t *testing.T) {
 func TestUnpad_ValidPadding_Succeeds(t *testing.T) {
 	for _, tc := range validPaddingTestTable {
 		t.Run(fmt.Sprintf("%v", tc.padded), func(t *testing.T) {
-			if got, ok := Unpad(tc.padded, tc.blockSize); !ok {
-				t.Error("want: ok == true, got: ok == false")
+			if got, err := Unpad(tc.padded, tc.blockSize); err != nil {
+				t.Errorf("want: 'nil', got: '%v'", err)
 			} else if !bytes.Equal(tc.unpadded, got) {
-				t.Errorf("want bytes: '%v', got bytes: '%v'", tc.unpadded, got)
+				t.Errorf("want bytes: '%x', got bytes: '%x'", tc.unpadded, got)
 			}
 		})
 	}
@@ -84,10 +85,9 @@ func TestUnpad_InvalidPadding_Fails(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(fmt.Sprintf("%v,%d", tc.plaintext, tc.blockSize), func(t *testing.T) {
-			if got, ok := Unpad(tc.plaintext, tc.blockSize); ok {
-				t.Error("want: ok == false, got: ok == true")
-			} else if !bytes.Equal(tc.plaintext, got) {
-				t.Errorf("want bytes: '%v', got bytes: '%v'", tc.plaintext, got)
+			_, err := Unpad(tc.plaintext, tc.blockSize)
+			if !errors.Is(err, ErrInvalidPadding) {
+				t.Errorf("want: '%v', got: '%v'", ErrInvalidPadding, err)
 			}
 		})
 	}

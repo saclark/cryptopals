@@ -1,0 +1,73 @@
+package set2
+
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"testing"
+
+	"github.com/saclark/cryptopals-go/pkcs7"
+)
+
+func TestChallenge15_ValidPadding_Succeeds(t *testing.T) {
+	validPaddingTestTable := []struct {
+		blockSize int
+		unpadded  []byte
+		padded    []byte
+	}{
+		{16, []byte("ICE ICE BABY"), []byte("ICE ICE BABY\x04\x04\x04\x04")},
+		{4, []byte{}, []byte("\x04\x04\x04\x04")},
+		{4, []byte("0"), []byte("0\x03\x03\x03")},
+		{4, []byte("00"), []byte("00\x02\x02")},
+		{4, []byte("000"), []byte("000\x01")},
+		{4, []byte("0000"), []byte("0000\x04\x04\x04\x04")},
+		{4, []byte("00000"), []byte("00000\x03\x03\x03")},
+		{4, []byte("000000"), []byte("000000\x02\x02")},
+		{4, []byte("0000000"), []byte("0000000\x01")},
+		{4, []byte("00000000"), []byte("00000000\x04\x04\x04\x04")},
+		{4, []byte("00000\x02"), []byte("00000\x02\x02\x02")},
+		{1, []byte("0"), []byte("0\x01")},
+		{1, []byte("0\x01"), []byte("0\x01\x01")},
+		{1, []byte{}, []byte("\x01")},
+		{255, []byte{}, []byte("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff")},
+	}
+
+	for _, tc := range validPaddingTestTable {
+		t.Run(fmt.Sprintf("%v", tc.padded), func(t *testing.T) {
+			if got, err := PKCS7Unpad(tc.padded, tc.blockSize); err != nil {
+				t.Errorf("want: 'nil', got: '%v'", err)
+			} else if !bytes.Equal(tc.unpadded, got) {
+				t.Errorf("want bytes: '%x', got bytes: '%x'", tc.unpadded, got)
+			}
+		})
+	}
+}
+
+func TestChallenge15_InvalidPadding_Fails(t *testing.T) {
+	tt := []struct {
+		plaintext []byte
+		blockSize int
+	}{
+		{[]byte("ICE ICE BABY\x05\x05\x05\x05"), 16},
+		{[]byte("ICE ICE BABY\x01\x02\x03\x04"), 16},
+		{[]byte{}, 1},
+		{[]byte("\x00"), 1},
+		{[]byte("0\x00"), 1},
+		{[]byte("\x03\x03"), 3},
+		{[]byte("\x03\x03\x03\x03"), 3},
+		{[]byte("00000\x01\x02\x03"), 4},
+		{[]byte("00000\x01\x03\x03"), 4},
+		{[]byte("00000\x03\x02\x03"), 4},
+		{[]byte("00000\x04\x04\x04"), 4},
+		{[]byte("000\xff"), 255},
+	}
+
+	for _, tc := range tt {
+		t.Run(fmt.Sprintf("%v,%d", tc.plaintext, tc.blockSize), func(t *testing.T) {
+			_, err := PKCS7Unpad(tc.plaintext, tc.blockSize)
+			if !errors.Is(err, pkcs7.ErrInvalidPadding) {
+				t.Errorf("want: '%v', got: '%v'", pkcs7.ErrInvalidPadding, err)
+			}
+		})
+	}
+}

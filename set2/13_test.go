@@ -25,9 +25,9 @@ func TestChallenge13(t *testing.T) {
 		t.Fatalf("decrypting encoded profile: %v", err)
 	}
 
-	unpaddedForge, ok := pkcs7.Unpad(decryptedForge, aes.BlockSize)
-	if !ok {
-		t.Fatalf("invalid padding on encoded profile: %s", unpaddedForge)
+	unpaddedForge, err := pkcs7.Unpad(decryptedForge, aes.BlockSize)
+	if err != nil {
+		t.Fatalf("unpadding encoded profile '%x': %v", unpaddedForge, err)
 	}
 
 	forgedProfile, err := DecodeUserProfile(string(unpaddedForge))

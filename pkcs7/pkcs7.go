@@ -1,5 +1,7 @@
 package pkcs7
 
+import "errors"
+
 // Pad pads the plaintext to a multiple of blockSize according to PKCS#7 rules.
 // It panics if blockSize is < 1 or > 255.
 func Pad(plaintext []byte, blockSize int) []byte {
@@ -16,15 +18,22 @@ func Pad(plaintext []byte, blockSize int) []byte {
 	return plaintext
 }
 
+var ErrInvalidPadding = errors.New("invalid padding")
+
 // Unpad removes padding from a plaintext that was padded to a multiple of
 // blockSize according to PKCS#7 rules. It panics if blockSize is < 1 or > 255.
-func Unpad(plaintext []byte, blockSize int) ([]byte, bool) {
+// It returns an error if the padding is invalid but callers should avoid
+// bubbling this error up to their callers, so as to avoid padding oracle
+// attacks. Note, however, that this function makes no attempt to keep it's
+// execution time consistent between inputs with valid and invalid padding, thus
+// still potentially leaking information about padding validity.
+func Unpad(plaintext []byte, blockSize int) ([]byte, error) {
 	if blockSize < 1 || blockSize > 255 {
 		panic("pkcs7.Unpad: blockSize not in range [1, 255]")
 	}
 
 	if len(plaintext) == 0 || len(plaintext)%blockSize != 0 {
-		return plaintext, false
+		return nil, ErrInvalidPadding
 	}
 
 	i := len(plaintext) - 1
@@ -32,14 +41,14 @@ func Unpad(plaintext []byte, blockSize int) ([]byte, bool) {
 	j := len(plaintext) - int(b)
 
 	if b == 0x00 || j < 0 {
-		return plaintext, false
+		return nil, ErrInvalidPadding
 	}
 
 	for i -= 1; i >= j; i-- {
 		if plaintext[i] != b {
-			return plaintext, false
+			return nil, ErrInvalidPadding
 		}
 	}
 
-	return plaintext[:j], true
+	return plaintext[:j], nil
 }
