@@ -56,7 +56,7 @@ func (o *ModeDetectionOracle) Encrypt(input []byte) (ciphertext []byte, err erro
 	if err != nil {
 		return nil, fmt.Errorf("choosing random mode: %w", err)
 	}
-	key, err := randomBlock(aes.BlockSize)
+	key, err := randomBytes(aes.BlockSize)
 	if err != nil {
 		return nil, fmt.Errorf("generating random key: %w", err)
 	}
@@ -67,7 +67,7 @@ func (o *ModeDetectionOracle) Encrypt(input []byte) (ciphertext []byte, err erro
 	if o.IsECB {
 		return aes.EncryptECB(plaintext, key)
 	}
-	iv, err := randomBlock(aes.BlockSize)
+	iv, err := randomBytes(aes.BlockSize)
 	if err != nil {
 		return nil, fmt.Errorf("generating random IV: %v", err)
 	}

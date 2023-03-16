@@ -103,7 +103,7 @@ type UserProfileOracle struct {
 // ciphertext that decrypts to a user profile with role=admin. The key is also
 // returned so attackers can verify their results.
 func NewUserProfileOracle() (*UserProfileOracle, error) {
-	key, err := randomBlock(aes.BlockSize)
+	key, err := randomBytes(aes.BlockSize)
 	if err != nil {
 		return nil, fmt.Errorf("generating random key: %w", err)
 	}

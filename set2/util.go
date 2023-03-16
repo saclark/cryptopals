@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"math/big"
 	"os"
 )
 
@@ -28,10 +29,18 @@ func base64DecodeFile(filepath string) ([]byte, error) {
 	return decoded[:n], nil
 }
 
-func randomBlock(blockSize int) ([]byte, error) {
-	block := make([]byte, blockSize)
-	if _, err := rand.Read(block); err != nil {
-		return nil, fmt.Errorf("reading %d random bytes: %v", blockSize, err)
+func randomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return nil, fmt.Errorf("reading %d random bytes: %v", n, err)
 	}
-	return block, nil
+	return b, nil
+}
+
+func randomInt(max int) (int, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
+	if err != nil {
+		return 0, fmt.Errorf("generating random int in range [0, %d): %v", max, err)
+	}
+	return int(n.Int64()), nil
 }

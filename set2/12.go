@@ -238,7 +238,7 @@ func generateTargetBlocks(initialBlock []byte, lenCiphertext int, oracle func([]
 // the same key upon each invocation. An attacker should be able to recover
 // targetPlaintext from this oracle.
 func NewECBByteAtATimeOracle(targetPlaintext []byte) (oracle func([]byte) ([]byte, error), err error) {
-	key, err := randomBlock(aes.BlockSize)
+	key, err := randomBytes(aes.BlockSize)
 	if err != nil {
 		return nil, fmt.Errorf("generating random key: %w", err)
 	}
