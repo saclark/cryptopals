@@ -14,7 +14,7 @@ func TestChallenge11(t *testing.T) {
 
 		want := oracle.IsECB
 		if want != got {
-			t.Errorf("want: '%v', got: '%v'", want, got)
+			t.Fatalf("want: '%v', got: '%v'", want, got)
 		}
 	}
 }
