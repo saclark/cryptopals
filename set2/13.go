@@ -38,7 +38,8 @@
 //
 // Now, two more easy functions. Generate a random AES key, then:
 //
-// A. Encrypt the encoded user profile under the key; "provide" that to the "attacker".
+// A. Encrypt the encoded user profile under the key; "provide" that to the
+//    "attacker".
 // B. Decrypt the encoded user profile and parse it.
 //
 // Using only the user input to profile_for() (as an oracle to generate "valid"
@@ -56,7 +57,7 @@ import (
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
-func ForgeAdminProfile(oracle func(string) ([]byte, error)) ([]byte, error) {
+func ForgeAdminRoleECB(oracle func(string) ([]byte, error)) ([]byte, error) {
 	// Inject the string "admin" with 11 bytes of padding, prepended with enough
 	// "A"s to make "admin" start on the 17th byte of the ciphertext, giving us
 	// back a ciphertext from which we can extract a valid "admin" block.
@@ -89,43 +90,38 @@ func ForgeAdminProfile(oracle func(string) ([]byte, error)) ([]byte, error) {
 	return ciphertext, nil
 }
 
-type UserProfileOracle struct {
-	Key []byte
-}
-
-// NewUserProfileOracle implements an encryption oracle that takes an email
-// address as input, URL encodes it as a user profile in the form
+// ECBCutAndPasteOracle implements an encryption oracle that takes an email
+// address as input, escapes any "&" any "=" characters, encodes it as a user
+// profile in the form:
 //
 //	email={oracleInput}&uid=10&role=user
 //
 // and then encrypts that using AES in ECB mode under the same key upon each
 // invocation. An attacker should be able to use this oracle to craft a valid
-// ciphertext that decrypts to a user profile with role=admin. The key is also
-// returned so attackers can verify their results.
-func NewUserProfileOracle() (*UserProfileOracle, error) {
+// ciphertext that decrypts to a user profile with "role=admin". Attackers can
+// use Key to verify their attacks.
+type ECBCutAndPasteOracle struct {
+	Key []byte
+}
+
+// NewECBCutAndPasteOracle creates a new ECBCutAndPasteOracle with a randomly
+// generated Key.
+func NewECBCutAndPasteOracle() (*ECBCutAndPasteOracle, error) {
 	key, err := randomBytes(aes.BlockSize)
 	if err != nil {
 		return nil, fmt.Errorf("generating random key: %w", err)
 	}
-	return &UserProfileOracle{Key: key}, nil
+	return &ECBCutAndPasteOracle{Key: key}, nil
 }
 
-// CreateEncryptedProfile is an encryption oracle that takes an email
-// address as input, URL encodes it as a user profile in the form
-//
-//	email={oracleInput}&uid=10&role=user
-//
-// and then encrypts that using AES in ECB mode under the same key upon each
-// invocation. An attacker should be able to use this oracle to craft a valid
-// ciphertext that decrypts to a user profile with role=admin. The key is also
-// returned so attackers can verify their results.
-func (o *UserProfileOracle) CreateEncryptedProfile(emailAddress string) ([]byte, error) {
+// CreateEncryptedProfile acts as the encryption oracle.
+func (o *ECBCutAndPasteOracle) CreateEncryptedProfile(emailAddress string) ([]byte, error) {
 	profile := UserProfile{
 		Email: string(emailAddress),
 		UID:   10,
 		Role:  "user",
 	}
-	plaintext := []byte(profile.urlEncode())
+	plaintext := []byte(profile.urlEncodeProfile())
 	plaintext = pkcs7.Pad(plaintext, aes.BlockSize)
 	return aes.EncryptECB(plaintext, o.Key)
 }
@@ -136,6 +132,8 @@ type UserProfile struct {
 	Role  string
 }
 
+// DecodeUserProfile is provided as a convenince for attackers when verifying
+// their attacks.
 func DecodeUserProfile(encodedProfile string) (UserProfile, error) {
 	v, err := url.ParseQuery(encodedProfile)
 	if err != nil {
@@ -153,7 +151,7 @@ func DecodeUserProfile(encodedProfile string) (UserProfile, error) {
 	return u, nil
 }
 
-// urlEncode encodes the user profile in the following format:
+// urlEncodeProfile encodes the user profile in the following format:
 //
 //	email={email}&uid={uid}&role={role}
 //
@@ -161,7 +159,7 @@ func DecodeUserProfile(encodedProfile string) (UserProfile, error) {
 // always encodes the parameters in the same order, shown above. It does not do
 // proper URL encoding because we want this to be more prone to ECB
 // cut-and-pase attacks.
-func (p *UserProfile) urlEncode() string {
+func (p *UserProfile) urlEncodeProfile() string {
 	return fmt.Sprintf(
 		"email=%s&uid=%d&role=%s",
 		escapeMetaChars(p.Email),

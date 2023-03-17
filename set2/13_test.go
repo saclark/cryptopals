@@ -10,12 +10,12 @@ import (
 // ECB cut-and-paste
 // See: https://www.cryptopals.com/sets/2/challenges/13
 func TestChallenge13(t *testing.T) {
-	oracle, err := NewUserProfileOracle()
+	oracle, err := NewECBCutAndPasteOracle()
 	if err != nil {
 		t.Fatalf("creating oracle: %v", err)
 	}
 
-	encryptedForge, err := ForgeAdminProfile(oracle.CreateEncryptedProfile)
+	encryptedForge, err := ForgeAdminRoleECB(oracle.CreateEncryptedProfile)
 	if err != nil {
 		t.Fatalf("forging admin profile: %v", err)
 	}
