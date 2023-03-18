@@ -22,8 +22,8 @@ var ErrInvalidPadding = errors.New("invalid padding")
 
 // Unpad removes padding from a plaintext that was padded to a multiple of
 // blockSize according to PKCS#7 rules. It panics if blockSize is < 1 or > 255.
-// It returns an error if the padding is invalid but callers should avoid
-// bubbling this error up to their callers, so as to avoid padding oracle
+// It returns ErrInvalidPadding if the padding is invalid but callers should
+// avoid bubbling this error up to their callers, so as to avoid padding oracle
 // attacks. Note, however, that this function makes no attempt to keep it's
 // execution time consistent between inputs with valid and invalid padding, thus
 // still potentially leaking information about padding validity.
