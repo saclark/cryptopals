@@ -51,58 +51,59 @@ import (
 	"github.com/saclark/cryptopals-go/xor"
 )
 
-// Given two consecutive plaintext blocks, A and B, and their corresponding
-// ciphertext blocks, X and Y:
+// ForgeAdminRoleCBC uses the properties of an unauthenticated AES-CBC
+// ciphertext produced by an oracle to edit the ciphertext such that it decrypts
+// to some desired plaintext. In this case, we are trying to inject the string
+// ";admin=true" into the plaintext.
 //
-//	Plaintext : A B
-//	Ciphertext: X Y
+// Given two consecutive plaintext blocks, p1 and p2, and their corresponding
+// ciphertext blocks, c1 and c2. Block p2 is computed as:
 //
-// Block B is computed as:
+//	p2 = Decrypt(c2) ⊕ c1
 //
-//	B = Decrypt(Y) ⊕ X
-//
-// We want to change X to a new value X', such that we obtain a new value of B,
-// B' = ";admin=true" (we don't care what A becomes). Since we are able to
-// choose B, one way to do this would be to to set B to all 0x00 bytes, such
+// We want to change c1 to a new value c1', such that we obtain a new value of
+// p2, p2' = ";admin=true" (we don't care what p1 becomes). Since we are able to
+// choose p2, one way to do this would be to to set p2 to all 0x00 bytes, such
 // that:
 //
-//	B = Decrypt(Y) ⊕ X
-//	0x00 = Decrypt(Y) ⊕ X
-//	Decrypt(Y) = X ⊕ 0x00
-//	Decrypt(Y) = X
+//	p2 = Decrypt(c2) ⊕ c1
+//	0x00 = Decrypt(c2) ⊕ c1
+//	Decrypt(c2) = c1 ⊕ 0x00
+//	Decrypt(c2) = c1
 //
-// This means that for the resulting ciphertext blocks, X and Y, we know that
-// Decrypt(Y) = X. With this knowledge, we can edit the value of X to some X',
-// such that we get a new value for B, B' = ";admin=true".
+// This means that for the resulting ciphertext blocks, c1 and c2, we know that
+// Decrypt(c2) = c1. With this knowledge, we can edit the value of c1 to some
+// c1', such that we get a new value for p2, p2' = ";admin=true".
 //
-//	B = Decrypt(Y) ⊕ X
-//	B' = Decrypt(Y) ⊕ X'
-//	B' = X ⊕ X'
-//	B' = X ⊕ (X ⊕ ";admin=true")
-//	B' = ";admin=true"
+//	p2 = Decrypt(c2) ⊕ c1
+//	p2' = Decrypt(c2) ⊕ c1'
+//	p2' = c1 ⊕ c1'
+//	p2' = c1 ⊕ (c1 ⊕ ";admin=true")
+//	p2' = ";admin=true"
 //
-// Alternatively, if we were not able to _choose_ the value of B but we still
-// _know_ the value of B, we could still accomplish this. Given:
+// Alternatively, if we were not able to _choose_ the value of p2 but we still
+// _know_ the value of p2, we could still accomplish this. Given:
 //
-//	B = Decrypt(Y) ⊕ X
-//	Decrypt(Y) = B ⊕ X
+//	p2 = Decrypt(c2) ⊕ c1
+//	Decrypt(c2) = p2 ⊕ c1
 //
-// We can edit X to X' like so:
+// We can edit c1 to c1' like so:
 //
-//	B = Decrypt(Y) ⊕ X
-//	B' = Decrypt(Y) ⊕ X'
-//	B' = Decrypt(Y) ⊕ (Decrypt(Y) ⊕ ";admin=true")
-//	B' = (B ⊕ X) ⊕ ((B ⊕ X) ⊕ ";admin=true")
-//	B' = ";admin=true"
+//	p2 = Decrypt(c2) ⊕ c1
+//	p2' = Decrypt(c2) ⊕ c1'
+//	p2' = Decrypt(c2) ⊕ (Decrypt(c2) ⊕ ";admin=true")
+//	p2' = (p2 ⊕ c1) ⊕ ((p2 ⊕ c1) ⊕ ";admin=true")
+//	p2' = ";admin=true"
 //
-// Since it's simpler, we'll go the B = 0x00 route.
+// Since it's simpler, we'll go the p2 = 0x00 route. Conveniently,
+// "comment1=cooking%20MCs;userdata=" is 32 bytes, so our input will start
+// block-aligned. We'll input 27 0x00 bytes, the first 16 of which correspond to
+// the ciphertext block we will edit and the last 11 of which will be
+// transformed into our target plaintext.
+//
+//	comment1=cooking%20MCs;userdata=000000000000000000000000000;comme...
+//	|--------------||--------------||--------------||--------------||---
 func ForgeAdminRoleCBC(oracle func(string) ([]byte, error)) ([]byte, error) {
-	// Conveniently, "comment1=cooking%20MCs;userdata=" is 32 bytes, so our
-	// input will start block-aligned. We'll input 27 0x00 bytes, the first 16
-	// of which correspond to the ciphertext block we will edit and the last 11
-	// of which will be transformed into our target plaintext.
-	// comment1=cooking%20MCs;userdata=000000000000000000000000000;comme...
-	// |--------------||--------------||--------------||--------------||---
 	input := make([]byte, 27)
 	ciphertext, err := oracle(string(input))
 	if err != nil {
