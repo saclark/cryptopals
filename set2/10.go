@@ -29,7 +29,7 @@ package set2
 import (
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/cipher"
 )
 
 func AESCBCDecryptFile(filepath string, key, iv []byte) ([]byte, error) {
@@ -38,7 +38,7 @@ func AESCBCDecryptFile(filepath string, key, iv []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	plaintext, err := aes.DecryptCBC(decoded, key, iv)
+	plaintext, err := cipher.CBCDecrypt(decoded, key, iv)
 	if err != nil {
 		return nil, fmt.Errorf("decrypting file contents: %v", err)
 	}

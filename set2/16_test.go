@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/cipher"
 )
 
 func TestChallenge16(t *testing.T) {
@@ -18,7 +18,7 @@ func TestChallenge16(t *testing.T) {
 		t.Fatalf("forging admin user data: %v", err)
 	}
 
-	decryptedForge, err := aes.DecryptCBC(encryptedForge, oracle.Key, oracle.IV)
+	decryptedForge, err := cipher.CBCDecrypt(encryptedForge, oracle.Key, oracle.IV)
 	if err != nil {
 		t.Fatalf("decrypting encoded data: %v", err)
 	}

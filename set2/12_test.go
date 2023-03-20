@@ -2,9 +2,8 @@ package set2
 
 import (
 	"bytes"
+	"crypto/aes"
 	"testing"
-
-	"github.com/saclark/cryptopals-go/aes"
 )
 
 // Byte-at-a-time ECB decryption (Simple)

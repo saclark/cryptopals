@@ -2,9 +2,10 @@ package set3
 
 import (
 	"bytes"
+	"crypto/aes"
 	"testing"
 
-	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/cipher"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
@@ -18,7 +19,7 @@ func TestChallenge17(t *testing.T) {
 		if err != nil {
 			t.Fatalf("getting encrypted session token: %v", err)
 		}
-		want, err := aes.DecryptCBC(token, oracle.Key, iv)
+		want, err := cipher.CBCDecrypt(token, oracle.Key, iv)
 		if err != nil {
 			t.Fatalf("decrypting session token: %v", err)
 		}

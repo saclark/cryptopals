@@ -14,11 +14,11 @@ package set1
 
 import (
 	"bufio"
+	"crypto/aes"
 	"encoding/hex"
 	"fmt"
 	"os"
 
-	"github.com/saclark/cryptopals-go/aes"
 	"github.com/saclark/cryptopals-go/attack"
 )
 

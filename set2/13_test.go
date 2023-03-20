@@ -1,9 +1,10 @@
 package set2
 
 import (
+	"crypto/aes"
 	"testing"
 
-	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/cipher"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
@@ -20,7 +21,7 @@ func TestChallenge13(t *testing.T) {
 		t.Fatalf("forging admin profile: %v", err)
 	}
 
-	decryptedForge, err := aes.DecryptECB(encryptedForge, oracle.Key)
+	decryptedForge, err := cipher.ECBDecrypt(encryptedForge, oracle.Key)
 	if err != nil {
 		t.Fatalf("decrypting encoded profile: %v", err)
 	}

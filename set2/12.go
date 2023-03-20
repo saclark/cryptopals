@@ -54,10 +54,11 @@
 package set2
 
 import (
+	"crypto/aes"
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/aes"
 	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals-go/cipher"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
@@ -79,7 +80,7 @@ func NewInputAppendingECBOracle(targetPlaintext []byte) (oracle func([]byte) ([]
 		copy(plaintext, input)
 		plaintext = append(plaintext, targetPlaintext...)
 		plaintext = pkcs7.Pad(plaintext, aes.BlockSize)
-		return aes.EncryptECB(plaintext, key)
+		return cipher.ECBEncrypt(plaintext, key)
 	}
 	return oracle, nil
 }

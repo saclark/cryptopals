@@ -1,7 +1,9 @@
 package cipher
 
 import (
+	"crypto/aes"
 	"crypto/cipher"
+	"fmt"
 
 	"github.com/saclark/cryptopals-go/xor"
 )
@@ -57,4 +59,26 @@ func (c *CBC) cryptCBC(dst, src []byte, cryptBlock func(dst, tmpDst, src, prev [
 	for i, j := 0, blockSize; j <= len(src); i, j = i+blockSize, j+blockSize {
 		prev = cryptBlock(dst[i:j], tmpDst, src[i:j], prev)
 	}
+}
+
+func CBCEncrypt(plaintext, key, iv []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, fmt.Errorf("creating cipher: %w", err)
+	}
+	cbc := NewCBC(block, iv)
+	ciphertext := make([]byte, len(plaintext))
+	cbc.Encrypt(ciphertext, plaintext)
+	return ciphertext, nil
+}
+
+func CBCDecrypt(ciphertext, key, iv []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, fmt.Errorf("creating cipher: %w", err)
+	}
+	cbc := NewCBC(block, iv)
+	plaintext := make([]byte, len(ciphertext))
+	cbc.Decrypt(plaintext, ciphertext)
+	return plaintext, nil
 }

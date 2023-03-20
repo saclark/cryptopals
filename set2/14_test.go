@@ -2,9 +2,8 @@ package set2
 
 import (
 	"bytes"
+	"crypto/aes"
 	"testing"
-
-	"github.com/saclark/cryptopals-go/aes"
 )
 
 func TestChallenge14(t *testing.T) {

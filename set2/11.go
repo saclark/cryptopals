@@ -26,12 +26,13 @@
 package set2
 
 import (
+	"crypto/aes"
 	"crypto/rand"
 	"fmt"
 	"math/big"
 
-	"github.com/saclark/cryptopals-go/aes"
 	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals-go/cipher"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
@@ -65,13 +66,13 @@ func (o *ModeDetectionOracle) Encrypt(input []byte) (ciphertext []byte, err erro
 		return nil, fmt.Errorf("junkifying and padding input: %w", err)
 	}
 	if o.IsECB {
-		return aes.EncryptECB(plaintext, key)
+		return cipher.ECBEncrypt(plaintext, key)
 	}
 	iv, err := randomBytes(aes.BlockSize)
 	if err != nil {
 		return nil, fmt.Errorf("generating random IV: %v", err)
 	}
-	return aes.EncryptCBC(plaintext, key, iv)
+	return cipher.CBCEncrypt(plaintext, key, iv)
 }
 
 func junkifyAndPad(input []byte) ([]byte, error) {

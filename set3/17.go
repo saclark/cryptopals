@@ -62,10 +62,11 @@
 package set3
 
 import (
+	"crypto/aes"
 	"encoding/base64"
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/cipher"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
@@ -177,7 +178,7 @@ func (o *CBCPaddingOracle) GetEncryptedSessionToken() (encryptedToken, iv []byte
 	}
 	plaintext = pkcs7.Pad(plaintext, aes.BlockSize)
 
-	ciphertext, err := aes.EncryptCBC(plaintext, o.Key, iv)
+	ciphertext, err := cipher.CBCEncrypt(plaintext, o.Key, iv)
 	if err != nil {
 		return nil, nil, fmt.Errorf("AES-CBC encrypting plaintext: %w", err)
 	}
@@ -190,7 +191,7 @@ func (o *CBCPaddingOracle) GetEncryptedSessionToken() (encryptedToken, iv []byte
 // returns nil. It simply panics if the token is unable to be decrypted, so
 // callers (i.e. attackers) don't have to bother checking the error type.
 func (o *CBCPaddingOracle) HandleEncryptedSessionToken(encryptedToken, iv []byte) error {
-	plaintext, err := aes.DecryptCBC(encryptedToken, o.Key, iv)
+	plaintext, err := cipher.CBCDecrypt(encryptedToken, o.Key, iv)
 	if err != nil {
 		panic("unable to decrypt token")
 	}

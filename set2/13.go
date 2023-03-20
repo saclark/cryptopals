@@ -48,12 +48,13 @@
 package set2
 
 import (
+	"crypto/aes"
 	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/cipher"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
@@ -123,7 +124,7 @@ func (o *ECBCutAndPasteOracle) CreateEncryptedProfile(emailAddress string) ([]by
 	}
 	plaintext := []byte(profile.urlEncodeProfile())
 	plaintext = pkcs7.Pad(plaintext, aes.BlockSize)
-	return aes.EncryptECB(plaintext, o.Key)
+	return cipher.ECBEncrypt(plaintext, o.Key)
 }
 
 type UserProfile struct {

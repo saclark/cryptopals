@@ -52,15 +52,24 @@
 package set3
 
 import (
+	"crypto/aes"
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/cipher"
 )
 
-func CryptAESCTR(input, key []byte, nonce uint64) ([]byte, error) {
-	output, err := aes.CryptCTR(input, key, nonce)
+func CryptAESCTR(input, key []byte, nonce []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
 	if err != nil {
+		return nil, fmt.Errorf("creating AES cipher: %w", err)
+	}
+
+	c := cipher.NewCTR(block, nonce)
+
+	output := make([]byte, len(input))
+	if err = c.Crypt(output, input); err != nil {
 		return nil, fmt.Errorf("crypting input: %w", err)
 	}
+
 	return output, nil
 }

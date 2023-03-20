@@ -1,6 +1,7 @@
 package cipher
 
 import (
+	"crypto/aes"
 	"crypto/cipher"
 	"encoding/binary"
 	"fmt"
@@ -68,4 +69,15 @@ type writeableBytes []byte
 func (b writeableBytes) Write(p []byte) (n int, err error) {
 	n = copy(b, p)
 	return n, nil
+}
+
+func CTRCrypt(input, key, nonce []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, fmt.Errorf("creating cipher: %w", err)
+	}
+	cbc := NewCTR(block, nonce)
+	output := make([]byte, len(input))
+	cbc.Crypt(output, input)
+	return output, nil
 }

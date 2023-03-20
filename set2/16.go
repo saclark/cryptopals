@@ -43,10 +43,11 @@
 package set2
 
 import (
+	"crypto/aes"
 	"fmt"
 	"strings"
 
-	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/cipher"
 	"github.com/saclark/cryptopals-go/pkcs7"
 	"github.com/saclark/cryptopals-go/xor"
 )
@@ -147,5 +148,5 @@ func (o *CBCBitFlippingOracle) EncryptUserComments(userData string) ([]byte, err
 	userData = strings.ReplaceAll(userData, "=", "%3D")
 	plaintext := []byte("comment1=cooking%20MCs;userdata=" + userData + ";comment2=%20like%20a%20pound%20of%20bacon")
 	plaintext = pkcs7.Pad(plaintext, aes.BlockSize)
-	return aes.EncryptCBC(plaintext, o.Key, o.IV)
+	return cipher.CBCEncrypt(plaintext, o.Key, o.IV)
 }

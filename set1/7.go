@@ -20,9 +20,10 @@
 package set1
 
 import (
+	"crypto/aes"
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/aes"
+	"github.com/saclark/cryptopals-go/cipher"
 )
 
 func AESECBDecryptFile(filepath string, key []byte) ([]byte, error) {
@@ -31,10 +32,15 @@ func AESECBDecryptFile(filepath string, key []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	plaintext, err := aes.DecryptECB(ciphertext, []byte(key))
+	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, fmt.Errorf("decrypting file contents: %v", err)
+		return nil, fmt.Errorf("creating cipher: %w", err)
 	}
+
+	ecb := cipher.NewECB(block)
+
+	plaintext := make([]byte, len(ciphertext))
+	ecb.Decrypt(plaintext, ciphertext)
 
 	return plaintext, nil
 }

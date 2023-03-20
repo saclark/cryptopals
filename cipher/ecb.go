@@ -1,7 +1,9 @@
 package cipher
 
 import (
+	"crypto/aes"
 	"crypto/cipher"
+	"fmt"
 )
 
 // ECB implements the ECB block cipher mode.
@@ -37,4 +39,26 @@ func (c *ECB) cryptECB(dst, src []byte, cryptBlock func(dst, src []byte)) {
 	for i, j := 0, blockSize; j <= len(src); i, j = i+blockSize, j+blockSize {
 		cryptBlock(dst[i:j], src[i:j])
 	}
+}
+
+func ECBEncrypt(plaintext, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, fmt.Errorf("creating cipher: %w", err)
+	}
+	cbc := NewECB(block)
+	ciphertext := make([]byte, len(plaintext))
+	cbc.Encrypt(ciphertext, plaintext)
+	return ciphertext, nil
+}
+
+func ECBDecrypt(ciphertext, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, fmt.Errorf("creating cipher: %w", err)
+	}
+	cbc := NewECB(block)
+	plaintext := make([]byte, len(ciphertext))
+	cbc.Decrypt(plaintext, ciphertext)
+	return plaintext, nil
 }
