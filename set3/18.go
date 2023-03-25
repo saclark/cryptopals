@@ -64,12 +64,9 @@ func CryptAESCTR(input, key []byte, nonce []byte) ([]byte, error) {
 		return nil, fmt.Errorf("creating AES cipher: %w", err)
 	}
 
-	c := cipher.NewCTR(block, nonce)
-
 	output := make([]byte, len(input))
-	if err = c.Crypt(output, input); err != nil {
-		return nil, fmt.Errorf("crypting input: %w", err)
-	}
+	ctr := cipher.NewCTR(block, nonce)
+	ctr.Crypt(output, input)
 
 	return output, nil
 }

@@ -2,6 +2,7 @@ package set3
 
 import (
 	"bytes"
+	"crypto/aes"
 	"testing"
 )
 
@@ -9,9 +10,9 @@ func TestChallenge18(t *testing.T) {
 	wantCiphertext := base64MustDecodeString("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==")
 	wantPlaintext := []byte("Yo, VIP Let's kick it Ice, Ice, baby Ice, Ice, baby ")
 	key := []byte("YELLOW SUBMARINE")
-	nonce := make([]byte, 8)
+	iv := make([]byte, aes.BlockSize)
 
-	gotPlaintext, err := CryptAESCTR(wantCiphertext, key, nonce)
+	gotPlaintext, err := CryptAESCTR(wantCiphertext, key, iv)
 	if err != nil {
 		t.Fatalf("AES-CTR decrypting ciphertext: %v", err)
 	}
@@ -20,7 +21,7 @@ func TestChallenge18(t *testing.T) {
 		t.Fatalf("want: '%s', got: '%s'", wantPlaintext, gotPlaintext)
 	}
 
-	gotCiphertext, err := CryptAESCTR(gotPlaintext, key, nonce)
+	gotCiphertext, err := CryptAESCTR(gotPlaintext, key, iv)
 	if err != nil {
 		t.Fatalf("AES-CTR encrypting plaintext: %v", err)
 	}
