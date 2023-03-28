@@ -10,31 +10,14 @@
 package set1
 
 import (
-	"bufio"
-	"encoding/hex"
-	"fmt"
-	"os"
-
 	"github.com/saclark/cryptopals-go/attack"
 	"github.com/saclark/cryptopals-go/xor"
 )
 
-func DetectAndCrackSingleByteXOREncryptedLine(filepath string) ([]byte, error) {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("opening file: %v", err)
-	}
-	defer file.Close()
-
+func DetectAndCrackSingleByteXOREncryptedLine(lines [][]byte) ([]byte, error) {
 	var plaintext []byte
 	var maxScore float64
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		hexStr := scanner.Text()
-		line, err := hex.DecodeString(hexStr)
-		if err != nil {
-			return nil, fmt.Errorf("hex decoding line '%s': %v", hexStr, err)
-		}
+	for _, line := range lines {
 		key, s := attack.DetectRepeatingByteXORKey(line)
 		if s >= maxScore {
 			maxScore = s
@@ -42,10 +25,5 @@ func DetectAndCrackSingleByteXOREncryptedLine(filepath string) ([]byte, error) {
 			xor.BytesRepeatingByte(plaintext, line, key)
 		}
 	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("scanning file: %v", err)
-	}
-
 	return plaintext, nil
 }

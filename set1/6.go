@@ -64,13 +64,7 @@ package set1
 
 import "github.com/saclark/cryptopals-go/attack"
 
-func RecoverRepeatingKeyXORFileKey(filepath string) ([]byte, error) {
-	decoded, err := base64DecodeFile(filepath)
-	if err != nil {
-		return nil, err
-	}
-
-	key, _ := attack.DetectRepeatingXORKey(decoded, 2, 40)
-
-	return key, nil
+func RecoverRepeatingKeyXORKey(ciphertext []byte) []byte {
+	key, _ := attack.DetectRepeatingXORKey(ciphertext, 2, 40)
+	return key
 }

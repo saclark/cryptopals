@@ -13,41 +13,20 @@
 package set1
 
 import (
-	"bufio"
 	"crypto/aes"
-	"encoding/hex"
-	"fmt"
-	"os"
 
 	"github.com/saclark/cryptopals-go/attack"
 )
 
-func FindAESECBEncryptedLine(filepath string) (string, error) {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return "", fmt.Errorf("opening file: %v", err)
-	}
-	defer file.Close()
-
-	var encryptedLine string
+func FindAESECBEncryptedCiphertext(ciphertexts [][]byte) []byte {
+	var ecbCiphertext []byte
 	var maxScore float64
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		b, err := hex.DecodeString(line)
-		if err != nil {
-			return "", fmt.Errorf("hex decoding line '%s': %v", line, err)
-		}
-		s := attack.DetectECBMode(b, aes.BlockSize)
+	for _, ciphertext := range ciphertexts {
+		s := attack.DetectECBMode(ciphertext, aes.BlockSize)
 		if s > maxScore {
-			encryptedLine = line
+			ecbCiphertext = ciphertext
 			maxScore = s
 		}
 	}
-
-	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("scanning file: %v", err)
-	}
-
-	return encryptedLine, nil
+	return ecbCiphertext
 }

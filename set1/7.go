@@ -26,12 +26,7 @@ import (
 	"github.com/saclark/cryptopals-go/cipher"
 )
 
-func AESECBDecryptFile(filepath string, key []byte) ([]byte, error) {
-	ciphertext, err := base64DecodeFile(filepath)
-	if err != nil {
-		return nil, err
-	}
-
+func AESECBDecrypt(ciphertext []byte, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, fmt.Errorf("creating cipher: %w", err)
