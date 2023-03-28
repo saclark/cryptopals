@@ -17,45 +17,9 @@
 package set2
 
 import (
-	"crypto/aes"
-	"fmt"
-
 	"github.com/saclark/cryptopals-go/attack"
-	"github.com/saclark/cryptopals-go/cipher"
-	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
 func CrackInputSandwichingECBOracle(maxBlockSize int, oracle func([]byte) ([]byte, error)) ([]byte, error) {
 	return attack.CrackECBOracleByteAtATime(maxBlockSize, oracle)
-}
-
-// NewInputSandwichingECBOracle creates an encryption oracle that will prepend
-// to it's input the same random count of the same random bytes, as well as
-// append to it's input targetPlaintext. It will then encrypt that using AES in
-// ECB mode under the same key upon each invocation. An attacker should be able
-// to recover targetPlaintext from this oracle.
-func NewInputSandwichingECBOracle(targetPlaintext []byte) (oracle func([]byte) ([]byte, error), err error) {
-	key, err := randomBytes(aes.BlockSize)
-	if err != nil {
-		return nil, fmt.Errorf("generating random key: %w", err)
-	}
-	n, err := randomInt(aes.BlockSize * 2)
-	if err != nil {
-		return nil, fmt.Errorf("generating random count of pre-input bytes: %w", err)
-	}
-	randPrefix, err := randomBytes(n)
-	if err != nil {
-		return nil, fmt.Errorf("generating random pre-input bytes: %w", err)
-	}
-
-	oracle = func(input []byte) ([]byte, error) {
-		var plaintext []byte
-		plaintext = append(plaintext, randPrefix...)
-		plaintext = append(plaintext, input...)
-		plaintext = append(plaintext, targetPlaintext...)
-		plaintext = pkcs7.Pad(plaintext, aes.BlockSize)
-		return cipher.ECBEncrypt(plaintext, key)
-	}
-
-	return oracle, nil
 }

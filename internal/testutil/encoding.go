@@ -41,6 +41,10 @@ func hexDecodeFileLines(filepath string) ([][]byte, error) {
 	return lines, nil
 }
 
+func MustBase64DecodeString(s string) []byte {
+	return Must(base64.StdEncoding.DecodeString(s))
+}
+
 func MustBase64DecodeFile(filepath string) []byte {
 	return Must(base64DecodeFile(filepath))
 }

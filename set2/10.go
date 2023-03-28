@@ -27,21 +27,9 @@
 package set2
 
 import (
-	"fmt"
-
 	"github.com/saclark/cryptopals-go/cipher"
 )
 
-func AESCBCDecryptFile(filepath string, key, iv []byte) ([]byte, error) {
-	decoded, err := base64DecodeFile(filepath)
-	if err != nil {
-		return nil, err
-	}
-
-	plaintext, err := cipher.CBCDecrypt(decoded, key, iv)
-	if err != nil {
-		return nil, fmt.Errorf("decrypting file contents: %v", err)
-	}
-
-	return plaintext, err
+func AESCBCDecrypt(ciphertext []byte, key, iv []byte) ([]byte, error) {
+	return cipher.CBCDecrypt(ciphertext, key, iv)
 }

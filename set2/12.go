@@ -54,33 +54,9 @@
 package set2
 
 import (
-	"crypto/aes"
-	"fmt"
-
 	"github.com/saclark/cryptopals-go/attack"
-	"github.com/saclark/cryptopals-go/cipher"
-	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
 func CrackInputAppendingECBOracle(maxBlockSize int, oracle func([]byte) ([]byte, error)) ([]byte, error) {
 	return attack.CrackECBOracleByteAtATime(maxBlockSize, oracle)
-}
-
-// NewInputAppendingECBOracle creates an encryption oracle that will append
-// targetPlaintext to it's input and then encrypt that using AES in ECB mode
-// under the same key upon each invocation. An attacker should be able to
-// recover targetPlaintext from this oracle.
-func NewInputAppendingECBOracle(targetPlaintext []byte) (oracle func([]byte) ([]byte, error), err error) {
-	key, err := randomBytes(aes.BlockSize)
-	if err != nil {
-		return nil, fmt.Errorf("generating random key: %w", err)
-	}
-	oracle = func(input []byte) ([]byte, error) {
-		plaintext := make([]byte, len(input))
-		copy(plaintext, input)
-		plaintext = append(plaintext, targetPlaintext...)
-		plaintext = pkcs7.Pad(plaintext, aes.BlockSize)
-		return cipher.ECBEncrypt(plaintext, key)
-	}
-	return oracle, nil
 }
