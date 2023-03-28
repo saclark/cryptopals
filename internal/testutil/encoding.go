@@ -61,3 +61,32 @@ func base64DecodeFile(filepath string) ([]byte, error) {
 	}
 	return decoded[:n], nil
 }
+
+func MustBase64DecodeFileLines(filepath string) [][]byte {
+	return Must(base64DecodeFileLines(filepath))
+}
+
+func base64DecodeFileLines(filepath string) ([][]byte, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("opening file: %v", err)
+	}
+	defer file.Close()
+
+	var decodedLines [][]byte
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		decoded, err := base64.StdEncoding.DecodeString(line)
+		if err != nil {
+			return nil, fmt.Errorf("base64 decoding line '%s': %v", line, err)
+		}
+		decodedLines = append(decodedLines, decoded)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("scanning file: %v", err)
+	}
+
+	return decodedLines, nil
+}

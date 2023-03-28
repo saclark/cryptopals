@@ -62,11 +62,8 @@
 package set3
 
 import (
-	"crypto/aes"
-	"encoding/base64"
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/cipher"
 	"github.com/saclark/cryptopals-go/pkcs7"
 )
 
@@ -136,68 +133,4 @@ func CrackCBCPaddingOracle(
 	}
 
 	return decrypted, nil
-}
-
-var encodedTokens = []string{
-	"MDAwMDAwTm93IHRoYXQgdGhlIHBhcnR5IGlzIGp1bXBpbmc=",
-	"MDAwMDAxV2l0aCB0aGUgYmFzcyBraWNrZWQgaW4gYW5kIHRoZSBWZWdhJ3MgYXJlIHB1bXBpbic=",
-	"MDAwMDAyUXVpY2sgdG8gdGhlIHBvaW50LCB0byB0aGUgcG9pbnQsIG5vIGZha2luZw==",
-	"MDAwMDAzQ29va2luZyBNQydzIGxpa2UgYSBwb3VuZCBvZiBiYWNvbg==",
-	"MDAwMDA0QnVybmluZyAnZW0sIGlmIHlvdSBhaW4ndCBxdWljayBhbmQgbmltYmxl",
-	"MDAwMDA1SSBnbyBjcmF6eSB3aGVuIEkgaGVhciBhIGN5bWJhbA==",
-	"MDAwMDA2QW5kIGEgaGlnaCBoYXQgd2l0aCBhIHNvdXBlZCB1cCB0ZW1wbw==",
-	"MDAwMDA3SSdtIG9uIGEgcm9sbCwgaXQncyB0aW1lIHRvIGdvIHNvbG8=",
-	"MDAwMDA4b2xsaW4nIGluIG15IGZpdmUgcG9pbnQgb2g=",
-	"MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzbyBteSBoYWlyIGNhbiBibG93",
-}
-
-type CBCPaddingOracle struct {
-	Key []byte
-}
-
-func NewCBCPaddingOracle() (*CBCPaddingOracle, error) {
-	key, err := randomBytes(aes.BlockSize)
-	if err != nil {
-		return nil, fmt.Errorf("generating random key: %w", err)
-	}
-	return &CBCPaddingOracle{Key: key}, nil
-}
-
-func (o *CBCPaddingOracle) GetEncryptedSessionToken() (encryptedToken, iv []byte, err error) {
-	iv, err = randomBytes(aes.BlockSize)
-	if err != nil {
-		return nil, nil, fmt.Errorf("generating random IV: %w", err)
-	}
-	i, err := randomInt(len(encodedTokens))
-	if err != nil {
-		return nil, nil, fmt.Errorf("picking random ciphertext: %w", err)
-	}
-	plaintext, err := base64.StdEncoding.DecodeString(encodedTokens[i])
-	if err != nil {
-		return nil, nil, fmt.Errorf("base64 decoding ciphertext: %w", err)
-	}
-	plaintext = pkcs7.Pad(plaintext, aes.BlockSize)
-
-	ciphertext, err := cipher.CBCEncrypt(plaintext, o.Key, iv)
-	if err != nil {
-		return nil, nil, fmt.Errorf("AES-CBC encrypting plaintext: %w", err)
-	}
-
-	return ciphertext, iv, nil
-}
-
-// HandleEncryptedSessionToken acts as the padding oracle. It returns
-// an error if the padding of the decrypted token is invalid. Otherwise, it
-// returns nil. It simply panics if the token is unable to be decrypted, so
-// callers (i.e. attackers) don't have to bother checking the error type.
-func (o *CBCPaddingOracle) HandleEncryptedSessionToken(encryptedToken, iv []byte) error {
-	plaintext, err := cipher.CBCDecrypt(encryptedToken, o.Key, iv)
-	if err != nil {
-		panic("unable to decrypt token")
-	}
-	_, err = pkcs7.Unpad(plaintext, aes.BlockSize)
-	if err != nil {
-		return fmt.Errorf("removing PKCS#7 padding: %w", err)
-	}
-	return nil
 }
