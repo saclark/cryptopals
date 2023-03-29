@@ -6,7 +6,7 @@
 // > speed. This one is there to *qualify* you. If you can do this one, you're
 // > probably just fine up to Set 6.
 //
-// There's a file here. It's been base64'd after being encrypted with
+// [There's a file here]. It's been base64'd after being encrypted with
 // repeating-key XOR.
 //
 // Decrypt it.
@@ -59,6 +59,8 @@
 // > We get more tech support questions for this challenge than any of the other
 // > ones. We promise, there aren't any blatant errors in this text. In
 // > particular: the "wokka wokka!!!" edit distance really is 37.
+//
+// [There's a file here]: github.com/saclark/cryptopals-go/set1/data/6.txt
 
 package set1
 

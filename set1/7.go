@@ -1,6 +1,6 @@
 // # AES in ECB mode
 //
-// The Base64-encoded content in this file has been encrypted via AES-128 in
+// The Base64-encoded content [in this file] has been encrypted via AES-128 in
 // ECB mode under the key
 //
 // 	"YELLOW SUBMARINE"
@@ -16,6 +16,8 @@
 // > You can obviously decrypt this using the OpenSSL command-line tool, but
 // > we're having you get ECB working in code for a reason. You'll need it a lot
 // > later on, and not just for attacking ECB.
+//
+// [in this file]: github.com/saclark/cryptopals-go/set1/data/7.txt
 
 package set1
 

@@ -1,6 +1,6 @@
 // # Detect AES in ECB mode
 //
-// In this file are a bunch of hex-encoded ciphertexts.
+// [In this file] are a bunch of hex-encoded ciphertexts.
 //
 // One of them has been encrypted with ECB.
 //
@@ -9,6 +9,8 @@
 // Remember that the problem with ECB is that it is stateless and deterministic;
 // the same 16 byte plaintext block will always produce the same 16 byte
 // ciphertext.
+//
+// [In this file]: github.com/saclark/cryptopals-go/set1/data/8.txt
 
 package set1
 

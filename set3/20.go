@@ -1,6 +1,6 @@
 // # Break fixed-nonce CTR statistically
 //
-// In this file find a similar set of Base64'd plaintext. Do with them exactly
+// [In this file] find a similar set of Base64'd plaintext. Do with them exactly
 // what you did with the first, but solve the problem differently.
 //
 // Instead of making spot guesses at to known plaintext, treat the collection of
@@ -14,6 +14,8 @@
 //
 // Solve the resulting concatenation of ciphertexts as if for repeating- key
 // XOR, with a key size of the length of the ciphertext you XOR'd.
+//
+// [In this file]: github.com/saclark/cryptopals-go/set3/data/20.txt
 
 package set3
 
