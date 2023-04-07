@@ -25,6 +25,18 @@ func NewMT19937(seed uint32) *MT19937 {
 	return mt
 }
 
+// NewMT19937FromState returns a 32-bit MT19937 Mersenne Twister with the given
+// internal state. It panics if len(output) < 624.
+func NewMT19937FromState(state []uint32) *MT19937 {
+	if len(state) < n {
+		panic("cryptopals-go/rand: insufficient state")
+	}
+	return &MT19937{
+		index: n,
+		state: state,
+	}
+}
+
 // Seed seeds, or re-seeds, the generator.
 func (mt *MT19937) Seed(seed uint32) {
 	mt.index = n
