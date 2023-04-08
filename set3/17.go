@@ -64,7 +64,7 @@ package set3
 import (
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/pkcs7"
+	"github.com/saclark/cryptopals/pkcs7"
 )
 
 // CrackCBCPaddingOracle executes a CBC padding oracle attack on a function

@@ -3,7 +3,7 @@ package set3
 import (
 	"testing"
 
-	"github.com/saclark/cryptopals-go/rand"
+	"github.com/saclark/cryptopals/rand"
 )
 
 func TestChallenge23(t *testing.T) {

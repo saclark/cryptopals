@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/saclark/cryptopals-go/rand"
+	"github.com/saclark/cryptopals/rand"
 )
 
 func RecoverPRNGSeed(prngOutput, maxElapsedSecs uint32) (uint32, error) {

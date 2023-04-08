@@ -19,8 +19,8 @@
 package set1
 
 import (
-	"github.com/saclark/cryptopals-go/attack"
-	"github.com/saclark/cryptopals-go/xor"
+	"github.com/saclark/cryptopals/attack"
+	"github.com/saclark/cryptopals/xor"
 )
 
 func CrackSingleByteXOR(bytes []byte) []byte {

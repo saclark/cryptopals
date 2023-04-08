@@ -78,7 +78,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals/attack"
 )
 
 // After the initial crack attempt, I printed and manually reviewed the results.

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/saclark/cryptopals-go/internal/testutil"
-	"github.com/saclark/cryptopals-go/rand"
+	"github.com/saclark/cryptopals/internal/testutil"
+	"github.com/saclark/cryptopals/rand"
 )
 
 func TestChallenge22(t *testing.T) {

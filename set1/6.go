@@ -60,11 +60,11 @@
 // > ones. We promise, there aren't any blatant errors in this text. In
 // > particular: the "wokka wokka!!!" edit distance really is 37.
 //
-// [There's a file here]: github.com/saclark/cryptopals-go/set1/data/6.txt
+// [There's a file here]: github.com/saclark/cryptopals/set1/data/6.txt
 
 package set1
 
-import "github.com/saclark/cryptopals-go/attack"
+import "github.com/saclark/cryptopals/attack"
 
 func RecoverRepeatingKeyXORKey(ciphertext []byte) []byte {
 	key, _ := attack.DetectRepeatingXORKey(ciphertext, 2, 40)

@@ -45,7 +45,7 @@ package set2
 import (
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/xor"
+	"github.com/saclark/cryptopals/xor"
 )
 
 // ForgeAdminRoleCBC uses the properties of an unauthenticated AES-CBC

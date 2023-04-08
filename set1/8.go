@@ -10,14 +10,14 @@
 // the same 16 byte plaintext block will always produce the same 16 byte
 // ciphertext.
 //
-// [In this file]: github.com/saclark/cryptopals-go/set1/data/8.txt
+// [In this file]: github.com/saclark/cryptopals/set1/data/8.txt
 
 package set1
 
 import (
 	"crypto/aes"
 
-	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals/attack"
 )
 
 func FindAESECBEncryptedCiphertext(ciphertexts [][]byte) []byte {

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/saclark/cryptopals-go/internal/testutil"
+	"github.com/saclark/cryptopals/internal/testutil"
 )
 
 // AES in ECB mode

@@ -55,7 +55,7 @@ import (
 	"crypto/aes"
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/cipher"
+	"github.com/saclark/cryptopals/cipher"
 )
 
 func CryptAESCTR(input, key []byte, nonce []byte) ([]byte, error) {

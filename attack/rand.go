@@ -1,6 +1,6 @@
 package attack
 
-import "github.com/saclark/cryptopals-go/rand"
+import "github.com/saclark/cryptopals/rand"
 
 const (
 	n    = 624

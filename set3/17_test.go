@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/saclark/cryptopals-go/cipher"
-	"github.com/saclark/cryptopals-go/internal/testutil"
-	"github.com/saclark/cryptopals-go/pkcs7"
+	"github.com/saclark/cryptopals/cipher"
+	"github.com/saclark/cryptopals/internal/testutil"
+	"github.com/saclark/cryptopals/pkcs7"
 )
 
 func TestChallenge17(t *testing.T) {

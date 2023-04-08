@@ -32,8 +32,8 @@
 package set3
 
 import (
-	"github.com/saclark/cryptopals-go/attack"
-	"github.com/saclark/cryptopals-go/rand"
+	"github.com/saclark/cryptopals/attack"
+	"github.com/saclark/cryptopals/rand"
 )
 
 // For the sake of this explanation, we'll use the following notation:

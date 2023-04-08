@@ -6,7 +6,7 @@ import (
 	"crypto/cipher"
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/xor"
+	"github.com/saclark/cryptopals/xor"
 )
 
 // CTR implements the CTR block cipher mode. The Go standard library already

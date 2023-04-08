@@ -26,7 +26,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/saclark/cryptopals-go/rand"
+	"github.com/saclark/cryptopals/rand"
 )
 
 func PRNGStreamCrypt(input []byte, seed uint32) []byte {

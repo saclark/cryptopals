@@ -17,7 +17,7 @@
 // > we're having you get ECB working in code for a reason. You'll need it a lot
 // > later on, and not just for attacking ECB.
 //
-// [in this file]: github.com/saclark/cryptopals-go/set1/data/7.txt
+// [in this file]: github.com/saclark/cryptopals/set1/data/7.txt
 
 package set1
 
@@ -25,7 +25,7 @@ import (
 	"crypto/aes"
 	"fmt"
 
-	"github.com/saclark/cryptopals-go/cipher"
+	"github.com/saclark/cryptopals/cipher"
 )
 
 func AESECBDecrypt(ciphertext []byte, key []byte) ([]byte, error) {

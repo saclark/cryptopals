@@ -54,7 +54,7 @@
 package set2
 
 import (
-	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals/attack"
 )
 
 func CrackInputAppendingECBOracle(maxBlockSize int, oracle func([]byte) ([]byte, error)) ([]byte, error) {

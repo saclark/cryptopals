@@ -28,7 +28,7 @@ package set2
 import (
 	"crypto/aes"
 
-	"github.com/saclark/cryptopals-go/attack"
+	"github.com/saclark/cryptopals/attack"
 )
 
 func DetectECBModeOracle(oracle func([]byte) ([]byte, error)) (isECB bool, err error) {

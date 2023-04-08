@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/saclark/cryptopals-go/xor"
+	"github.com/saclark/cryptopals/xor"
 )
 
 func TestDetectRepeatingByteXORKey_CorrectlyDetectsTheKey(t *testing.T) {

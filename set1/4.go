@@ -7,13 +7,13 @@
 //
 // (Your code from #3 should help.)
 //
-// [this file]: github.com/saclark/cryptopals-go/set1/data/4.txt
+// [this file]: github.com/saclark/cryptopals/set1/data/4.txt
 
 package set1
 
 import (
-	"github.com/saclark/cryptopals-go/attack"
-	"github.com/saclark/cryptopals-go/xor"
+	"github.com/saclark/cryptopals/attack"
+	"github.com/saclark/cryptopals/xor"
 )
 
 func DetectAndCrackSingleByteXOREncryptedLine(lines [][]byte) ([]byte, error) {

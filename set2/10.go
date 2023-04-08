@@ -24,12 +24,12 @@
 // > What's the point of even doing this stuff if you aren't going to learn from
 // > it?
 //
-// [The file here]: github.com/saclark/cryptopals-go/set2/data/10.txt
+// [The file here]: github.com/saclark/cryptopals/set2/data/10.txt
 
 package set2
 
 import (
-	"github.com/saclark/cryptopals-go/cipher"
+	"github.com/saclark/cryptopals/cipher"
 )
 
 func AESCBCDecrypt(ciphertext []byte, key, iv []byte) ([]byte, error) {

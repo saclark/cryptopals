@@ -4,7 +4,7 @@ import (
 	"math"
 	"math/bits"
 
-	"github.com/saclark/cryptopals-go/xor"
+	"github.com/saclark/cryptopals/xor"
 )
 
 // DetectRepeatingByteXORKey returns a single byte and a score representing the

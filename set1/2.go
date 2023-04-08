@@ -17,7 +17,7 @@
 
 package set1
 
-import "github.com/saclark/cryptopals-go/xor"
+import "github.com/saclark/cryptopals/xor"
 
 func FixedXOR(x, y []byte) []byte {
 	xoredBytes := make([]byte, len(x))

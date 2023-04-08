@@ -24,7 +24,7 @@
 
 package set2
 
-import "github.com/saclark/cryptopals-go/pkcs7"
+import "github.com/saclark/cryptopals/pkcs7"
 
 func PKCS7Unpad(input []byte, blockSize int) ([]byte, error) {
 	return pkcs7.Unpad(input, blockSize)

@@ -15,11 +15,11 @@
 // Solve the resulting concatenation of ciphertexts as if for repeating- key
 // XOR, with a key size of the length of the ciphertext you XOR'd.
 //
-// [In this file]: github.com/saclark/cryptopals-go/set3/data/20.txt
+// [In this file]: github.com/saclark/cryptopals/set3/data/20.txt
 
 package set3
 
-import "github.com/saclark/cryptopals-go/attack"
+import "github.com/saclark/cryptopals/attack"
 
 // Welp, turns out my approach for challenge 19 was the same approach sought by
 // this challenge. So I'm just reusing the same solution I used for challenge

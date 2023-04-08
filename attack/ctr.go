@@ -1,7 +1,7 @@
 package attack
 
 import (
-	"github.com/saclark/cryptopals-go/xor"
+	"github.com/saclark/cryptopals/xor"
 )
 
 type FixedNonceCTRCrackResult struct {

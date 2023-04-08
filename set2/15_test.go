@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/saclark/cryptopals-go/pkcs7"
+	"github.com/saclark/cryptopals/pkcs7"
 )
 
 func TestChallenge15_ValidPadding_Succeeds(t *testing.T) {

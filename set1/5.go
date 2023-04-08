@@ -22,7 +22,7 @@
 
 package set1
 
-import "github.com/saclark/cryptopals-go/xor"
+import "github.com/saclark/cryptopals/xor"
 
 func RepeatingKeyXOR(bytes, key []byte) []byte {
 	xored := make([]byte, len(bytes))

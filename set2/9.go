@@ -19,7 +19,7 @@
 
 package set2
 
-import "github.com/saclark/cryptopals-go/pkcs7"
+import "github.com/saclark/cryptopals/pkcs7"
 
 func PKCS7Pad(b []byte, blockSize int) []byte {
 	return pkcs7.Pad(b, blockSize)

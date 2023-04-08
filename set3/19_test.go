@@ -5,8 +5,8 @@ import (
 	"crypto/aes"
 	"testing"
 
-	"github.com/saclark/cryptopals-go/cipher"
-	"github.com/saclark/cryptopals-go/internal/testutil"
+	"github.com/saclark/cryptopals/cipher"
+	"github.com/saclark/cryptopals/internal/testutil"
 )
 
 func TestChallenge19(t *testing.T) {

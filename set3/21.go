@@ -8,7 +8,7 @@
 
 package set3
 
-import "github.com/saclark/cryptopals-go/rand"
+import "github.com/saclark/cryptopals/rand"
 
 func NewMT19937PRNG(seed uint32) *rand.MT19937 {
 	return rand.NewMT19937(seed)
