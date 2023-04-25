@@ -32,18 +32,25 @@ type Digest [Size]byte
 // A proper implementation exists in the Go standard library. This was written
 // as a learning exercise.
 func Sum(message []byte) Digest {
-	msgLen := len(message)
-	padLen := BlockSize - (msgLen % BlockSize)
+	h := [5]uint32{_h0, _h1, _h2, _h3, _h4}
+	return SumFromHashState(h, 0, message)
+}
+
+// SumFromHashState returns the SHA-1 checksum of the data starting from an
+// initial state of the hash registers, h, and an initial message byte length,
+// initLen. The message bit length written to the padding is
+// (initLen + len(data)) * 8.
+func SumFromHashState(h [5]uint32, initLen uint64, data []byte) Digest {
+	dataLen := len(data)
+	padLen := BlockSize - (dataLen % BlockSize)
 	if padLen < 9 {
 		padLen += BlockSize
 	}
 
-	m := make([]byte, msgLen+padLen)
-	copy(m, message)
-	m[msgLen] = 0x80
-	binary.BigEndian.PutUint64(m[len(m)-8:], uint64(msgLen)*8)
-
-	h := [5]uint32{_h0, _h1, _h2, _h3, _h4}
+	m := make([]byte, dataLen+padLen)
+	copy(m, data)
+	m[dataLen] = 0x80
+	binary.BigEndian.PutUint64(m[len(m)-8:], (initLen+uint64(dataLen))*8)
 
 	var w [80]uint32
 	for ; len(m) >= BlockSize; m = m[BlockSize:] {
