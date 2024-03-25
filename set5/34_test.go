@@ -1,6 +1,7 @@
 package set5
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"math/big"
@@ -18,7 +19,12 @@ func TestChallenge34(t *testing.T) {
 	client, server := net.Pipe()
 	defer client.Close()
 
-	// TODO: Better error handling.
+	logChan := make(chan string)
+	msgChan := make(chan []byte, 1)
+	echoChan := make(chan []byte, 1)
+	errChan := make(chan error, 1)
+
+	// Server (Bob)
 	go func() {
 		defer server.Close()
 		bob, err := AcceptSecureConnection(server)
@@ -26,37 +32,60 @@ func TestChallenge34(t *testing.T) {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println("bob reading")
+		logChan <- "bob reading"
 		msg, err := io.ReadAll(bob)
+		logChan <- "bob read"
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		fmt.Printf("bob writing: %s\n", msg)
-		// if _, err := bob.Write(msg); err != nil {
-		// 	fmt.Println(err)
-		// 	return
-		// }
+		logChan <- fmt.Sprintf("bob writing: %s", msg)
+		_, err = bob.Write(msg)
+		logChan <- "bob wrote"
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}()
 
-	alice, err := RequestSecureConnection(client, p, g)
-	if err != nil {
-		t.Fatal(err)
+	// Client (Alice)
+	go func() {
+		alice, err := RequestSecureConnection(client, p, g)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		logChan <- "alice writing"
+		msg := []byte("Hello, World!")
+		logChan <- "alice wrote"
+		if _, err := alice.Write(msg); err != nil {
+			t.Fatal(err)
+		}
+
+		logChan <- "alice reading"
+		echo, err := io.ReadAll(alice)
+		logChan <- "alice read"
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !bytes.Equal(msg, echo) {
+			t.Fatalf("want response to echo request, got request '%s' and response '%s'", msg, echo)
+		}
+	}()
+
+	for {
+		select {
+		case s := <-logChan:
+			t.Log(s)
+		case err := <-errChan:
+			t.Fatal(err)
+		default:
+			msg := <-msgChan
+			echo := <-echoChan
+			if !bytes.Equal(msg, echo) {
+				t.Fatalf("want response to echo request, got request '%s' and response '%s'", msg, echo)
+			}
+		}
 	}
-
-	fmt.Println("alice writing")
-	msg := []byte("Hello, World!")
-	if _, err := alice.Write(msg); err != nil {
-		t.Fatal(err)
-	}
-
-	// fmt.Println("alice reading")
-	// echo, err := io.ReadAll(alice)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
-
-	// if !bytes.Equal(msg, echo) {
-	// 	t.Fatalf("want response to echo request, got request '%s' and response '%s'", msg, echo)
-	// }
 }
