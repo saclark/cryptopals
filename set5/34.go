@@ -79,21 +79,28 @@ type AESCBCEncryptedMessage struct {
 
 type SecureConnection struct {
 	// net.Conn
-	enc *gob.Encoder
-	dec *gob.Decoder
-	s   []byte
+	enc  *gob.Encoder
+	dec  *gob.Decoder
+	key  []byte
+	rbuf []byte
 }
 
 func (sc *SecureConnection) Read(b []byte) (n int, err error) {
+	if len(sc.rbuf) > 0 {
+		n = copy(b, sc.rbuf)
+		sc.rbuf = sc.rbuf[n:]
+	}
+
+	if n == len(b) {
+		return n, nil
+	}
+
 	var msg AESCBCEncryptedMessage
 	if err = sc.dec.Decode(&msg); err != nil {
 		return 0, err
 	}
 
-	h := sha1.Sum(sc.s)
-	k := h[:16]
-
-	plaintext, err := cipher.CBCDecrypt(msg.Ciphertext, k, msg.IV)
+	plaintext, err := cipher.CBCDecrypt(msg.Ciphertext, sc.key, msg.IV)
 	if err != nil {
 		return 0, fmt.Errorf("AES-CBC decrypting message: %w", err)
 	}
@@ -103,21 +110,20 @@ func (sc *SecureConnection) Read(b []byte) (n int, err error) {
 		return 0, fmt.Errorf("removing PKCS#7 padding: %w", err)
 	}
 
-	n = copy(b, plaintext)
+	n += copy(b[n:], plaintext)
+	sc.rbuf = plaintext[n:]
+
 	return n, nil
 }
 
 func (sc *SecureConnection) Write(b []byte) (n int, err error) {
-	h := sha1.Sum(sc.s)
-	k := h[:16]
-
 	iv := make([]byte, aes.BlockSize)
 	if _, err = rand.Read(iv); err != nil {
 		return 0, fmt.Errorf("generating random IV: %w", err)
 	}
 
 	b = pkcs7.Pad(b, aes.BlockSize)
-	b, err = cipher.CBCEncrypt(b, k, iv)
+	b, err = cipher.CBCEncrypt(b, sc.key, iv)
 	if err != nil {
 		return 0, fmt.Errorf("AES-CBC encrypting message: %w", err)
 	}
@@ -141,8 +147,9 @@ func RequestSecureConnection(conn net.Conn, p *big.Int, g int) (*SecureConnectio
 
 	sc := &SecureConnection{
 		// Conn: conn,
-		enc: gob.NewEncoder(conn),
-		dec: gob.NewDecoder(conn),
+		enc:  gob.NewEncoder(conn),
+		dec:  gob.NewDecoder(conn),
+		rbuf: make([]byte, aes.BlockSize),
 	}
 
 	init := KeyExchangeInitiation{
@@ -160,7 +167,9 @@ func RequestSecureConnection(conn net.Conn, p *big.Int, g int) (*SecureConnectio
 		return nil, fmt.Errorf("receiving key exchange finalization: %w", err)
 	}
 
-	sc.s = party.DeriveSharedSecret(final.ServerPublicKey)
+	s := party.DeriveSharedSecret(final.ServerPublicKey)
+	h := sha1.Sum(s)
+	sc.key = h[:16]
 
 	return sc, nil
 }
@@ -188,7 +197,9 @@ func AcceptSecureConnection(conn net.Conn) (*SecureConnection, error) {
 		return nil, fmt.Errorf("sending key exchange finalization: %w", err)
 	}
 
-	sc.s = party.DeriveSharedSecret(init.ClientPublicKey)
+	s := party.DeriveSharedSecret(init.ClientPublicKey)
+	h := sha1.Sum(s)
+	sc.key = h[:16]
 
 	return sc, nil
 }
