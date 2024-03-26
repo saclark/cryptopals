@@ -109,6 +109,7 @@ func (sc *SecureConnection) Read(b []byte) (n int, err error) {
 
 	plaintext, err = pkcs7.Unpad(plaintext, aes.BlockSize)
 	if err != nil {
+		// TODO: Don't return error here.
 		return 0, fmt.Errorf("removing PKCS#7 padding: %w", err)
 	}
 
@@ -205,12 +206,50 @@ func AcceptSecureConnection(conn net.Conn) (*SecureConnection, error) {
 	return sc, nil
 }
 
-// type DHKeyFixingMITM struct {
-// 	net.Conn
-// 	enc *gob.Encoder
-// 	dec *gob.Decoder
-// }
+// Mallory
+func MitMSecureConnection(
+	clientConn net.Conn,
+	serverConn net.Conn,
+) (client *SecureConnection, server *SecureConnection, err error) {
+	h := sha1.Sum(make([]byte, aes.BlockSize))
+	key := h[:16]
 
-// func NewDHKeyFixingMITM(clientConn net.Conn, serverConn net.Conn) (*DHKeyFixingMITM, error) {
-// 	panic("todo")
-// }
+	client = &SecureConnection{
+		// Conn: conn,
+		enc: gob.NewEncoder(clientConn),
+		dec: gob.NewDecoder(clientConn),
+		key: key,
+	}
+	server = &SecureConnection{
+		// Conn: conn,
+		enc: gob.NewEncoder(serverConn),
+		dec: gob.NewDecoder(serverConn),
+		key: key,
+	}
+
+	// Proxy RequestSecureConnection
+	var init KeyExchangeInitiation
+	if err := client.dec.Decode(&init); err != nil {
+		return nil, nil, fmt.Errorf("receiving key exchange initiation: %w", err)
+	}
+
+	init.ClientPublicKey = init.P
+
+	if err := server.enc.Encode(init); err != nil {
+		return nil, nil, fmt.Errorf("sending parameter injected key exchange initiation: %w", err)
+	}
+
+	// Proxy AcceptSecureConnection
+	var final KeyExchangeFinalization
+	if err := server.dec.Decode(&final); err != nil {
+		return nil, nil, fmt.Errorf("receiving key exchange finalization: %w", err)
+	}
+
+	final.ServerPublicKey = init.P
+
+	if err := client.enc.Encode(final); err != nil {
+		return nil, nil, fmt.Errorf("sending parameter injected key exchange finalization: %w", err)
+	}
+
+	return client, server, nil
+}

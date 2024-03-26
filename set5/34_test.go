@@ -18,34 +18,76 @@ func TestChallenge34(t *testing.T) {
 
 	msg := []byte("attack at dawn")
 
-	alice, bob := net.Pipe()
+	alice, aliceMallory := net.Pipe()
+	bobMallory, bob := net.Pipe()
 	echoChan := make(chan []byte, 1)
+	// mitmChan := make(chan []byte)
 	errChan := make(chan error, 1)
+
+	// MitM (Mallory)
+	go func() {
+		defer aliceMallory.Close()
+		defer bobMallory.Close()
+		aConn, bConn, err := MitMSecureConnection(aliceMallory, bobMallory)
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		go func() {
+			for {
+				msg, err := io.ReadAll(bConn)
+				if err != nil {
+					errChan <- err
+					return
+				}
+
+				// TODO: Decrypt.
+				fmt.Printf("MitM bob->alice: %x\n", msg)
+
+				if _, err = aConn.Write(msg); err != nil {
+					errChan <- err
+					return
+				}
+			}
+		}()
+
+		for {
+			msg, err := io.ReadAll(aConn)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			// TODO: Decrypt.
+			fmt.Printf("MitM alice->bob: %x\n", msg)
+
+			if _, err = bConn.Write(msg); err != nil {
+				errChan <- err
+				return
+			}
+		}
+	}()
 
 	// Server (Bob)
 	go func() {
 		defer bob.Close()
 		conn, err := AcceptSecureConnection(bob)
 		if err != nil {
-			fmt.Println(err)
+			errChan <- err
 			return
 		}
 
 		msg, err := io.ReadAll(conn)
 		if err != nil {
-			fmt.Println(err)
+			errChan <- err
 			return
 		}
 
 		if _, err = conn.Write(msg); err != nil {
-			fmt.Println(err)
+			errChan <- err
 			return
 		}
-	}()
-
-	// MitM (Mallory)
-	go func() {
-
 	}()
 
 	// Client (Alice)
