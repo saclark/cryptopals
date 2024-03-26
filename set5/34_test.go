@@ -2,13 +2,18 @@ package set5
 
 import (
 	"bytes"
+	"crypto/aes"
+	"encoding/gob"
 	"fmt"
 	"io"
 	"math/big"
 	"net"
+	"sync"
 	"testing"
 
+	"github.com/saclark/cryptopals/cipher"
 	"github.com/saclark/cryptopals/internal/testutil"
+	"github.com/saclark/cryptopals/pkcs7"
 )
 
 func TestChallenge34(t *testing.T) {
@@ -18,74 +23,124 @@ func TestChallenge34(t *testing.T) {
 
 	msg := []byte("attack at dawn")
 
-	alice, aliceMallory := net.Pipe()
-	bobMallory, bob := net.Pipe()
+	alice, aliceMal := net.Pipe()
+	bobMal, bob := net.Pipe()
 	echoChan := make(chan []byte, 1)
-	// mitmChan := make(chan []byte)
+	aliceCaptureChan := make(chan []byte)
+	bobCaptureChan := make(chan []byte)
 	errChan := make(chan error, 1)
 
 	// MitM (Mallory)
 	go func() {
-		defer aliceMallory.Close()
-		defer bobMallory.Close()
-		aConn, bConn, err := MitMSecureConnection(aliceMallory, bobMallory)
+		defer aliceMal.Close()
+		defer bobMal.Close()
+
+		key, err := KeyFixDiffieHellmanKeyExchange(aliceMal, bobMal)
 		if err != nil {
-			errChan <- err
+			errChan <- fmt.Errorf("key fixing Diffie-Hellman key exchange: %w", err)
 			return
 		}
 
+		// alice -> aliceMal -> bobMal -> bob
+		//             |          |
+		//      aliceCapture   bobCapture
+
+		var wg sync.WaitGroup
+		aliceR, aliceW := io.Pipe()
+		bobR, bobW := io.Pipe()
+
 		go func() {
 			for {
-				msg, err := io.ReadAll(bConn)
+				dec := gob.NewDecoder(aliceR)
+				var msg AESCBCEncryptedMessage
+				if err = dec.Decode(&msg); err != nil {
+					errChan <- fmt.Errorf("decoding captured message sent from Alice to Bob: %w", err)
+					return
+				}
+
+				plaintext, err := cipher.CBCDecrypt(msg.Ciphertext, key, msg.IV)
 				if err != nil {
-					errChan <- err
+					errChan <- fmt.Errorf("decrypting captured message sent from Alice to Bob: %w", err)
 					return
 				}
 
-				// TODO: Decrypt.
-				fmt.Printf("MitM bob->alice: %x\n", msg)
-
-				if _, err = aConn.Write(msg); err != nil {
-					errChan <- err
+				plaintext, err = pkcs7.Unpad(plaintext, aes.BlockSize)
+				if err != nil {
+					// TODO: Don't return error here.
+					errChan <- fmt.Errorf("unpadding captured message sent from Alice to Bob: %w", err)
 					return
 				}
+
+				aliceCaptureChan <- plaintext
 			}
 		}()
 
-		for {
-			msg, err := io.ReadAll(aConn)
-			if err != nil {
-				errChan <- err
+		go func() {
+			for {
+				dec := gob.NewDecoder(bobR)
+				var msg AESCBCEncryptedMessage
+				if err = dec.Decode(&msg); err != nil {
+					errChan <- fmt.Errorf("decoding captured message sent from Bob to Alice: %w", err)
+					return
+				}
+
+				plaintext, err := cipher.CBCDecrypt(msg.Ciphertext, key, msg.IV)
+				if err != nil {
+					errChan <- fmt.Errorf("decrypting captured message sent from Bob to Alice: %w", err)
+					return
+				}
+
+				plaintext, err = pkcs7.Unpad(plaintext, aes.BlockSize)
+				if err != nil {
+					// TODO: Don't return error here.
+					errChan <- fmt.Errorf("unpadding captured message sent from Bob to Alice: %w", err)
+					return
+				}
+
+				bobCaptureChan <- plaintext
+			}
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, err = io.Copy(bobMal, io.TeeReader(aliceMal, aliceW)); err != nil {
+				errChan <- fmt.Errorf("proxying from Alice to Bob: %w", err)
 				return
 			}
+		}()
 
-			// TODO: Decrypt.
-			fmt.Printf("MitM alice->bob: %x\n", msg)
-
-			if _, err = bConn.Write(msg); err != nil {
-				errChan <- err
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, err = io.Copy(aliceMal, io.TeeReader(bobMal, bobW)); err != nil {
+				errChan <- fmt.Errorf("proxying from Bob to Alice: %w", err)
 				return
 			}
-		}
+		}()
+
+		wg.Wait()
 	}()
 
 	// Server (Bob)
 	go func() {
 		defer bob.Close()
-		conn, err := AcceptSecureConnection(bob)
+		key, err := AcceptDiffieHellmanKeyExchange(bob)
 		if err != nil {
-			errChan <- err
+			errChan <- fmt.Errorf("accepting Diffie-Hellman key exchange: %w", err)
 			return
 		}
 
-		msg, err := io.ReadAll(conn)
+		encrypted := NewEncryptedReadWriter(bob, key)
+
+		msg, err := io.ReadAll(encrypted)
 		if err != nil {
-			errChan <- err
+			errChan <- fmt.Errorf("reading message from Alice: %w", err)
 			return
 		}
 
-		if _, err = conn.Write(msg); err != nil {
-			errChan <- err
+		if _, err = encrypted.Write(msg); err != nil {
+			errChan <- fmt.Errorf("writing echo to Alice: %w", err)
 			return
 		}
 	}()
@@ -93,32 +148,54 @@ func TestChallenge34(t *testing.T) {
 	// Client (Alice)
 	go func() {
 		defer alice.Close()
-		conn, err := RequestSecureConnection(alice, p, g)
+		key, err := RequestDiffieHellmanKeyExchange(alice, p, g)
 		if err != nil {
-			errChan <- err
+			errChan <- fmt.Errorf("requesting Diffie-Hellman key exchange: %w", err)
 			return
 		}
 
-		if _, err = conn.Write(msg); err != nil {
-			errChan <- err
+		encrypted := NewEncryptedReadWriter(alice, key)
+
+		if _, err = encrypted.Write(msg); err != nil {
+			errChan <- fmt.Errorf("writing message to Bob: %w", err)
 			return
 		}
 
-		echo, err := io.ReadAll(conn)
+		echo, err := io.ReadAll(encrypted)
 		if err != nil {
-			errChan <- err
+			errChan <- fmt.Errorf("reading echo from Bob: %w", err)
 			return
 		}
 
 		echoChan <- echo
 	}()
 
-	select {
-	case err := <-errChan:
-		t.Fatal(err)
-	case echo := <-echoChan:
-		if !bytes.Equal(msg, echo) {
-			t.Fatalf("want response to echo request, got request '%x' and response '%x'", msg, echo)
+	var aliceCaptureCount, bobCaptureCount int
+	for {
+		select {
+		case err := <-errChan:
+			t.Fatal(err)
+		case aliceCapture := <-aliceCaptureChan:
+			if !bytes.Equal(msg, aliceCapture) {
+				t.Errorf("want decrypted capture from Alice: '%x', got decrypted capture from Alice: '%x'", msg, aliceCapture)
+			}
+			aliceCaptureCount++
+		case bobCapture := <-bobCaptureChan:
+			if !bytes.Equal(msg, bobCapture) {
+				t.Errorf("want decrypted capture from Bob: '%x', got decrypted capture from Bob: '%x'", msg, bobCapture)
+			}
+			bobCaptureCount++
+		case echo := <-echoChan:
+			if !bytes.Equal(msg, echo) {
+				t.Errorf("want echo: '%x', got echo: '%x'", msg, echo)
+			}
+			if aliceCaptureCount == 0 {
+				t.Error("want plaintexts captured from Alice, got none")
+			}
+			if bobCaptureCount == 0 {
+				t.Error("want plaintexts captured from Bob, got none")
+			}
+			return
 		}
 	}
 }
