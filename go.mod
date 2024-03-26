@@ -1,3 +1,3 @@
 module github.com/saclark/cryptopals
 
-go 1.20
+go 1.22
