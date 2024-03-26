@@ -54,6 +54,7 @@ import (
 	"crypto/sha1"
 	"encoding/gob"
 	"fmt"
+	"io"
 	"math/big"
 	"net"
 
@@ -88,10 +89,11 @@ type SecureConnection struct {
 func (sc *SecureConnection) Read(b []byte) (n int, err error) {
 	if len(sc.rbuf) > 0 {
 		n = copy(b, sc.rbuf)
+		b = b[n:]
 		sc.rbuf = sc.rbuf[n:]
 	}
 
-	if n == len(b) {
+	if len(b) == 0 {
 		return n, nil
 	}
 
@@ -110,10 +112,10 @@ func (sc *SecureConnection) Read(b []byte) (n int, err error) {
 		return 0, fmt.Errorf("removing PKCS#7 padding: %w", err)
 	}
 
-	n += copy(b[n:], plaintext)
-	sc.rbuf = plaintext[n:]
+	nn := copy(b, plaintext)
+	sc.rbuf = plaintext[nn:]
 
-	return n, nil
+	return n + nn, io.EOF
 }
 
 func (sc *SecureConnection) Write(b []byte) (n int, err error) {
@@ -147,9 +149,8 @@ func RequestSecureConnection(conn net.Conn, p *big.Int, g int) (*SecureConnectio
 
 	sc := &SecureConnection{
 		// Conn: conn,
-		enc:  gob.NewEncoder(conn),
-		dec:  gob.NewDecoder(conn),
-		rbuf: make([]byte, aes.BlockSize),
+		enc: gob.NewEncoder(conn),
+		dec: gob.NewDecoder(conn),
 	}
 
 	init := KeyExchangeInitiation{
