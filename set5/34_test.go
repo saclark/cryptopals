@@ -2,18 +2,13 @@ package set5
 
 import (
 	"bytes"
-	"crypto/aes"
-	"encoding/gob"
 	"fmt"
 	"io"
 	"math/big"
 	"net"
-	"sync"
 	"testing"
 
-	"github.com/saclark/cryptopals/cipher"
 	"github.com/saclark/cryptopals/internal/testutil"
-	"github.com/saclark/cryptopals/pkcs7"
 )
 
 func TestChallenge34(t *testing.T) {
@@ -25,107 +20,112 @@ func TestChallenge34(t *testing.T) {
 
 	alice, aliceMal := net.Pipe()
 	bobMal, bob := net.Pipe()
+
+	var aliceSiphon DecryptingReader
+	var bobSiphon DecryptingReader
+	Proxy(&aliceSiphon, &bobSiphon, aliceMal, bobMal)
+
 	echoChan := make(chan []byte, 1)
-	aliceCaptureChan := make(chan []byte)
-	bobCaptureChan := make(chan []byte)
+	aliceSiphonChan := make(chan []byte)
+	bobSiphonChan := make(chan []byte)
 	errChan := make(chan error, 1)
 
 	// MitM (Mallory)
-	go func() {
-		defer aliceMal.Close()
-		defer bobMal.Close()
+	// go func() {
+	// 	defer aliceMal.Close()
+	// 	defer bobMal.Close()
 
-		key, err := KeyFixDiffieHellmanKeyExchange(aliceMal, bobMal)
-		if err != nil {
-			errChan <- fmt.Errorf("key fixing Diffie-Hellman key exchange: %w", err)
-			return
-		}
+	// 	key, err := KeyFixDiffieHellmanKeyExchange(aliceMal, bobMal)
+	// 	if err != nil {
+	// 		errChan <- fmt.Errorf("key fixing Diffie-Hellman key exchange: %w", err)
+	// 		return
+	// 	}
 
-		// alice -> aliceMal -> bobMal -> bob
-		//             |          |
-		//      aliceCapture   bobCapture
+	// 	// alice -> aliceMal -> bobMal -> bob
+	// 	//             |          |
+	// 	//      aliceSiphon   bobSiphon
 
-		var wg sync.WaitGroup
-		aliceR, aliceW := io.Pipe()
-		bobR, bobW := io.Pipe()
+	// 	var wg sync.WaitGroup
+	// 	aliceR, aliceW := io.Pipe()
+	// 	bobR, bobW := io.Pipe()
 
-		go func() {
-			for {
-				dec := gob.NewDecoder(aliceR)
-				var msg AESCBCEncryptedMessage
-				if err = dec.Decode(&msg); err != nil {
-					errChan <- fmt.Errorf("decoding captured message sent from Alice to Bob: %w", err)
-					return
-				}
+	// 	go func() {
+	// 		for {
+	// 			dec := gob.NewDecoder(aliceR)
+	// 			var msg AESCBCEncryptedMessage
+	// 			if err = dec.Decode(&msg); err != nil {
+	// 				errChan <- fmt.Errorf("decoding siphoned message sent from Alice to Bob: %w", err)
+	// 				return
+	// 			}
 
-				plaintext, err := cipher.CBCDecrypt(msg.Ciphertext, key, msg.IV)
-				if err != nil {
-					errChan <- fmt.Errorf("decrypting captured message sent from Alice to Bob: %w", err)
-					return
-				}
+	// 			plaintext, err := cipher.CBCDecrypt(msg.Ciphertext, key, msg.IV)
+	// 			if err != nil {
+	// 				errChan <- fmt.Errorf("decrypting siphoned message sent from Alice to Bob: %w", err)
+	// 				return
+	// 			}
 
-				plaintext, err = pkcs7.Unpad(plaintext, aes.BlockSize)
-				if err != nil {
-					// TODO: Don't return error here.
-					errChan <- fmt.Errorf("unpadding captured message sent from Alice to Bob: %w", err)
-					return
-				}
+	// 			plaintext, err = pkcs7.Unpad(plaintext, aes.BlockSize)
+	// 			if err != nil {
+	// 				// TODO: Don't return error here.
+	// 				errChan <- fmt.Errorf("unpadding siphoned message sent from Alice to Bob: %w", err)
+	// 				return
+	// 			}
 
-				aliceCaptureChan <- plaintext
-			}
-		}()
+	// 			aliceSiphonChan <- plaintext
+	// 		}
+	// 	}()
 
-		go func() {
-			for {
-				dec := gob.NewDecoder(bobR)
-				var msg AESCBCEncryptedMessage
-				if err = dec.Decode(&msg); err != nil {
-					errChan <- fmt.Errorf("decoding captured message sent from Bob to Alice: %w", err)
-					return
-				}
+	// 	go func() {
+	// 		for {
+	// 			dec := gob.NewDecoder(bobR)
+	// 			var msg AESCBCEncryptedMessage
+	// 			if err = dec.Decode(&msg); err != nil {
+	// 				errChan <- fmt.Errorf("decoding siphoned message sent from Bob to Alice: %w", err)
+	// 				return
+	// 			}
 
-				plaintext, err := cipher.CBCDecrypt(msg.Ciphertext, key, msg.IV)
-				if err != nil {
-					errChan <- fmt.Errorf("decrypting captured message sent from Bob to Alice: %w", err)
-					return
-				}
+	// 			plaintext, err := cipher.CBCDecrypt(msg.Ciphertext, key, msg.IV)
+	// 			if err != nil {
+	// 				errChan <- fmt.Errorf("decrypting siphoned message sent from Bob to Alice: %w", err)
+	// 				return
+	// 			}
 
-				plaintext, err = pkcs7.Unpad(plaintext, aes.BlockSize)
-				if err != nil {
-					// TODO: Don't return error here.
-					errChan <- fmt.Errorf("unpadding captured message sent from Bob to Alice: %w", err)
-					return
-				}
+	// 			plaintext, err = pkcs7.Unpad(plaintext, aes.BlockSize)
+	// 			if err != nil {
+	// 				// TODO: Don't return error here.
+	// 				errChan <- fmt.Errorf("unpadding siphoned message sent from Bob to Alice: %w", err)
+	// 				return
+	// 			}
 
-				bobCaptureChan <- plaintext
-			}
-		}()
+	// 			bobSiphonChan <- plaintext
+	// 		}
+	// 	}()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if _, err = io.Copy(bobMal, io.TeeReader(aliceMal, aliceW)); err != nil {
-				errChan <- fmt.Errorf("proxying from Alice to Bob: %w", err)
-				return
-			}
-		}()
+	// 	wg.Add(1)
+	// 	go func() {
+	// 		defer wg.Done()
+	// 		if _, err = io.Copy(bobMal, io.TeeReader(aliceMal, aliceW)); err != nil {
+	// 			errChan <- fmt.Errorf("proxying from Alice to Bob: %w", err)
+	// 			return
+	// 		}
+	// 	}()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if _, err = io.Copy(aliceMal, io.TeeReader(bobMal, bobW)); err != nil {
-				errChan <- fmt.Errorf("proxying from Bob to Alice: %w", err)
-				return
-			}
-		}()
+	// 	wg.Add(1)
+	// 	go func() {
+	// 		defer wg.Done()
+	// 		if _, err = io.Copy(aliceMal, io.TeeReader(bobMal, bobW)); err != nil {
+	// 			errChan <- fmt.Errorf("proxying from Bob to Alice: %w", err)
+	// 			return
+	// 		}
+	// 	}()
 
-		wg.Wait()
-	}()
+	// 	wg.Wait()
+	// }()
 
 	// Server (Bob)
 	go func() {
 		defer bob.Close()
-		key, err := AcceptDiffieHellmanKeyExchange(bob)
+		key, err := DeriveSharedSecretWithClient(bob)
 		if err != nil {
 			errChan <- fmt.Errorf("accepting Diffie-Hellman key exchange: %w", err)
 			return
@@ -148,7 +148,7 @@ func TestChallenge34(t *testing.T) {
 	// Client (Alice)
 	go func() {
 		defer alice.Close()
-		key, err := RequestDiffieHellmanKeyExchange(alice, p, g)
+		key, err := DeriveSharedSecretWithServer(alice, p, g)
 		if err != nil {
 			errChan <- fmt.Errorf("requesting Diffie-Hellman key exchange: %w", err)
 			return
@@ -170,30 +170,30 @@ func TestChallenge34(t *testing.T) {
 		echoChan <- echo
 	}()
 
-	var aliceCaptureCount, bobCaptureCount int
+	var aliceSiphonCount, bobSiphonCount int
 	for {
 		select {
 		case err := <-errChan:
 			t.Fatal(err)
-		case aliceCapture := <-aliceCaptureChan:
-			if !bytes.Equal(msg, aliceCapture) {
-				t.Errorf("want decrypted capture from Alice: '%x', got decrypted capture from Alice: '%x'", msg, aliceCapture)
+		case aliceSiphon := <-aliceSiphonChan:
+			if !bytes.Equal(msg, aliceSiphon) {
+				t.Errorf("want decrypted siphon from Alice: '%x', got decrypted siphon from Alice: '%x'", msg, aliceSiphon)
 			}
-			aliceCaptureCount++
-		case bobCapture := <-bobCaptureChan:
-			if !bytes.Equal(msg, bobCapture) {
-				t.Errorf("want decrypted capture from Bob: '%x', got decrypted capture from Bob: '%x'", msg, bobCapture)
+			aliceSiphonCount++
+		case bobSiphon := <-bobSiphonChan:
+			if !bytes.Equal(msg, bobSiphon) {
+				t.Errorf("want decrypted siphon from Bob: '%x', got decrypted siphon from Bob: '%x'", msg, bobSiphon)
 			}
-			bobCaptureCount++
+			bobSiphonCount++
 		case echo := <-echoChan:
 			if !bytes.Equal(msg, echo) {
 				t.Errorf("want echo: '%x', got echo: '%x'", msg, echo)
 			}
-			if aliceCaptureCount == 0 {
-				t.Error("want plaintexts captured from Alice, got none")
+			if aliceSiphonCount == 0 {
+				t.Error("want plaintexts siphoned from Alice, got none")
 			}
-			if bobCaptureCount == 0 {
-				t.Error("want plaintexts captured from Bob, got none")
+			if bobSiphonCount == 0 {
+				t.Error("want plaintexts siphoned from Bob, got none")
 			}
 			return
 		}

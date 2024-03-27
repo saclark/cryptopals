@@ -79,25 +79,35 @@ type AESCBCEncryptedMessage struct {
 }
 
 type EncryptedReadWriter struct {
-	enc  *gob.Encoder
+	*DecryptingReader
+	*EncryptingWriter
+}
+
+func NewEncryptedReadWriter(rw io.ReadWriter, key []byte) *EncryptedReadWriter {
+	return &EncryptedReadWriter{
+		DecryptingReader: NewDecryptingReader(rw, key),
+		EncryptingWriter: NewEncryptingWriter(rw, key),
+	}
+}
+
+type DecryptingReader struct {
 	dec  *gob.Decoder
 	key  []byte
 	rbuf []byte
 }
 
-func NewEncryptedReadWriter(rw io.ReadWriter, key []byte) *EncryptedReadWriter {
-	return &EncryptedReadWriter{
-		enc: gob.NewEncoder(rw),
-		dec: gob.NewDecoder(rw),
+func NewDecryptingReader(r io.Reader, key []byte) *DecryptingReader {
+	return &DecryptingReader{
+		dec: gob.NewDecoder(r),
 		key: key,
 	}
 }
 
-func (sc *EncryptedReadWriter) Read(b []byte) (n int, err error) {
-	if len(sc.rbuf) > 0 {
-		n = copy(b, sc.rbuf)
+func (r *DecryptingReader) Read(b []byte) (n int, err error) {
+	if len(r.rbuf) > 0 {
+		n = copy(b, r.rbuf)
 		b = b[n:]
-		sc.rbuf = sc.rbuf[n:]
+		r.rbuf = r.rbuf[n:]
 	}
 
 	if len(b) == 0 {
@@ -105,11 +115,11 @@ func (sc *EncryptedReadWriter) Read(b []byte) (n int, err error) {
 	}
 
 	var msg AESCBCEncryptedMessage
-	if err = sc.dec.Decode(&msg); err != nil {
+	if err = r.dec.Decode(&msg); err != nil {
 		return 0, fmt.Errorf("decoding: %w", err)
 	}
 
-	plaintext, err := cipher.CBCDecrypt(msg.Ciphertext, sc.key, msg.IV)
+	plaintext, err := cipher.CBCDecrypt(msg.Ciphertext, r.key, msg.IV)
 	if err != nil {
 		return 0, fmt.Errorf("decrypting: %w", err)
 	}
@@ -121,24 +131,36 @@ func (sc *EncryptedReadWriter) Read(b []byte) (n int, err error) {
 	}
 
 	nn := copy(b, plaintext)
-	sc.rbuf = plaintext[nn:]
+	r.rbuf = plaintext[nn:]
 
 	return n + nn, io.EOF
 }
 
-func (sc *EncryptedReadWriter) Write(b []byte) (n int, err error) {
+type EncryptingWriter struct {
+	enc *gob.Encoder
+	key []byte
+}
+
+func NewEncryptingWriter(w io.Writer, key []byte) *EncryptingWriter {
+	return &EncryptingWriter{
+		enc: gob.NewEncoder(w),
+		key: key,
+	}
+}
+
+func (rw *EncryptingWriter) Write(b []byte) (n int, err error) {
 	iv := make([]byte, aes.BlockSize)
 	if _, err = rand.Read(iv); err != nil {
 		return 0, fmt.Errorf("generating random IV: %w", err)
 	}
 
 	b = pkcs7.Pad(b, aes.BlockSize)
-	b, err = cipher.CBCEncrypt(b, sc.key, iv)
+	b, err = cipher.CBCEncrypt(b, rw.key, iv)
 	if err != nil {
 		return 0, fmt.Errorf("encrypting: %w", err)
 	}
 
-	if err = sc.enc.Encode(AESCBCEncryptedMessage{
+	if err = rw.enc.Encode(AESCBCEncryptedMessage{
 		IV:         iv,
 		Ciphertext: b,
 	}); err != nil {
@@ -148,15 +170,32 @@ func (sc *EncryptedReadWriter) Write(b []byte) (n int, err error) {
 	return len(b), nil
 }
 
+type EncryptedConnection struct {
+	net.Conn
+	rw *EncryptedReadWriter
+}
+
+func NewEncryptedConnection(conn net.Conn, key []byte) *EncryptedConnection {
+	return &EncryptedConnection{
+		Conn: conn,
+		rw:   NewEncryptedReadWriter(conn, key),
+	}
+}
+
+func (c *EncryptedConnection) Read(b []byte) (n int, err error) {
+	return c.rw.Read(b)
+}
+
+func (c *EncryptedConnection) Write(b []byte) (n int, err error) {
+	return c.rw.Write(b)
+}
+
 // Alice
-func RequestDiffieHellmanKeyExchange(conn net.Conn, p *big.Int, g int) ([]byte, error) {
+func DeriveSharedSecretWithServer(conn net.Conn, p *big.Int, g int) ([]byte, error) {
 	party, err := dh.NewParty(p, g)
 	if err != nil {
 		return nil, fmt.Errorf("initializing Diffie-Hellman party")
 	}
-
-	enc := gob.NewEncoder(conn)
-	dec := gob.NewDecoder(conn)
 
 	init := KeyExchangeInitiation{
 		P:               p,
@@ -164,12 +203,12 @@ func RequestDiffieHellmanKeyExchange(conn net.Conn, p *big.Int, g int) ([]byte, 
 		ClientPublicKey: party.PublicKey(),
 	}
 
-	if err = enc.Encode(init); err != nil {
+	if err = gob.NewEncoder(conn).Encode(init); err != nil {
 		return nil, fmt.Errorf("sending key exchange initiation: %w", err)
 	}
 
 	var final KeyExchangeFinalization
-	if err = dec.Decode(&final); err != nil {
+	if err = gob.NewDecoder(conn).Decode(&final); err != nil {
 		return nil, fmt.Errorf("receiving key exchange finalization: %w", err)
 	}
 
@@ -180,12 +219,9 @@ func RequestDiffieHellmanKeyExchange(conn net.Conn, p *big.Int, g int) ([]byte, 
 }
 
 // Bob
-func AcceptDiffieHellmanKeyExchange(conn net.Conn) ([]byte, error) {
-	enc := gob.NewEncoder(conn)
-	dec := gob.NewDecoder(conn)
-
+func DeriveSharedSecretWithClient(conn net.Conn) ([]byte, error) {
 	var init KeyExchangeInitiation
-	if err := dec.Decode(&init); err != nil {
+	if err := gob.NewDecoder(conn).Decode(&init); err != nil {
 		return nil, fmt.Errorf("receiving key exchange initiation: %w", err)
 	}
 
@@ -195,7 +231,7 @@ func AcceptDiffieHellmanKeyExchange(conn net.Conn) ([]byte, error) {
 	}
 
 	final := KeyExchangeFinalization{ServerPublicKey: party.PublicKey()}
-	if err = enc.Encode(final); err != nil {
+	if err = gob.NewEncoder(conn).Encode(final); err != nil {
 		return nil, fmt.Errorf("sending key exchange finalization: %w", err)
 	}
 
@@ -206,43 +242,105 @@ func AcceptDiffieHellmanKeyExchange(conn net.Conn) ([]byte, error) {
 }
 
 // Mallory
-func KeyFixDiffieHellmanKeyExchange(
-	clientConn net.Conn,
-	serverConn net.Conn,
-) ([]byte, error) {
-	clientEnc := gob.NewEncoder(clientConn)
-	clientDec := gob.NewDecoder(clientConn)
-	serverEnc := gob.NewEncoder(serverConn)
-	serverDec := gob.NewDecoder(serverConn)
+// func KeyFixDiffieHellmanKeyExchange(
+// 	client net.Conn,
+// 	server net.Conn,
+// ) ([]byte, error) {
+// 	var init KeyExchangeInitiation
+// 	if err := gob.NewDecoder(client).Decode(&init); err != nil {
+// 		return nil, fmt.Errorf("receiving key exchange initiation: %w", err)
+// 	}
 
+// 	init.ClientPublicKey = init.P
+
+// 	if err := gob.NewEncoder(server).Encode(init); err != nil {
+// 		return nil, fmt.Errorf("sending parameter injected key exchange initiation: %w", err)
+// 	}
+
+// 	var final KeyExchangeFinalization
+// 	if err := gob.NewDecoder(server).Decode(&final); err != nil {
+// 		return nil, fmt.Errorf("receiving key exchange finalization: %w", err)
+// 	}
+
+// 	final.ServerPublicKey = init.P
+
+// 	if err := gob.NewEncoder(client).Encode(final); err != nil {
+// 		return nil, fmt.Errorf("sending parameter injected key exchange finalization: %w", err)
+// 	}
+
+// 	party, err := dh.NewParty(init.P, init.G)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("initializing Diffie-Hellman party")
+// 	}
+// 	s := party.DeriveSharedSecret(init.P)
+// 	h := sha1.Sum(s)
+
+// 	return h[:aes.BlockSize], nil
+// }
+
+func Proxy(
+	clientSiphon *DecryptingReader,
+	serverSiphon *DecryptingReader,
+	client,
+	server net.Conn,
+) error {
+	defer client.Close()
+	defer server.Close()
+
+	// Fix the derived shared secret via parameter injection.
 	var init KeyExchangeInitiation
-	if err := clientDec.Decode(&init); err != nil {
-		return nil, fmt.Errorf("receiving key exchange initiation: %w", err)
+	if err := gob.NewDecoder(client).Decode(&init); err != nil {
+		return fmt.Errorf("receiving key exchange initiation: %w", err)
 	}
 
 	init.ClientPublicKey = init.P
 
-	if err := serverEnc.Encode(init); err != nil {
-		return nil, fmt.Errorf("sending parameter injected key exchange initiation: %w", err)
+	if err := gob.NewEncoder(server).Encode(init); err != nil {
+		return fmt.Errorf("sending parameter injected key exchange initiation: %w", err)
 	}
 
 	var final KeyExchangeFinalization
-	if err := serverDec.Decode(&final); err != nil {
-		return nil, fmt.Errorf("receiving key exchange finalization: %w", err)
+	if err := gob.NewDecoder(server).Decode(&final); err != nil {
+		return fmt.Errorf("receiving key exchange finalization: %w", err)
 	}
 
 	final.ServerPublicKey = init.P
 
-	if err := clientEnc.Encode(final); err != nil {
-		return nil, fmt.Errorf("sending parameter injected key exchange finalization: %w", err)
+	if err := gob.NewEncoder(client).Encode(final); err != nil {
+		return fmt.Errorf("sending parameter injected key exchange finalization: %w", err)
 	}
 
 	party, err := dh.NewParty(init.P, init.G)
 	if err != nil {
-		return nil, fmt.Errorf("initializing Diffie-Hellman party")
+		return fmt.Errorf("initializing Diffie-Hellman party")
 	}
 	s := party.DeriveSharedSecret(init.P)
 	h := sha1.Sum(s)
 
-	return h[:aes.BlockSize], nil
+	key := h[:aes.BlockSize]
+
+	// Proxy the connections while siphoning off data.
+	clientR, clientW := io.Pipe()
+	*clientSiphon = *NewDecryptingReader(clientR, key)
+
+	serverR, serverW := io.Pipe()
+	*serverSiphon = *NewDecryptingReader(serverR, key)
+
+	done := make(chan error, 1)
+	go func() {
+		defer close(done)
+		if _, err := io.Copy(server, io.TeeReader(client, clientW)); err != nil {
+			done <- fmt.Errorf("proxying from Alice to Bob: %w", err)
+		}
+	}()
+
+	if _, err := io.Copy(client, io.TeeReader(server, serverW)); err != nil {
+		return fmt.Errorf("proxying from Bob to Alice: %w", err)
+	}
+
+	if err := <-done; err != nil {
+		return err
+	}
+
+	return nil
 }
