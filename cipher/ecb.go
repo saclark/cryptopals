@@ -46,9 +46,9 @@ func ECBEncrypt(plaintext, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating cipher: %w", err)
 	}
-	cbc := NewECB(block)
+	ecb := NewECB(block)
 	ciphertext := make([]byte, len(plaintext))
-	cbc.Encrypt(ciphertext, plaintext)
+	ecb.Encrypt(ciphertext, plaintext)
 	return ciphertext, nil
 }
 
@@ -57,8 +57,8 @@ func ECBDecrypt(ciphertext, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating cipher: %w", err)
 	}
-	cbc := NewECB(block)
+	ecb := NewECB(block)
 	plaintext := make([]byte, len(ciphertext))
-	cbc.Decrypt(plaintext, ciphertext)
+	ecb.Decrypt(plaintext, ciphertext)
 	return plaintext, nil
 }
